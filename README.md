@@ -11,11 +11,11 @@ You can read the Jupyter notebooks here on Github. I will be uploading the actua
 
 ## Summary Goal Stages:
 
-1) ~~Writing up the original project with discussion.~~ Done!
-2) Improve the code structure (pretty much rewrite all the code)
-3) Overhaul new code with userful features to increas usability.
-4) Overhaul the backend and work on efficiencies
-5) Add paint and bells and whistles and finalize on usability
+1) ~~Write up the original project with discussion.~~ Done!
+2) Improve the code structure (pretty much rewrite all the code).
+3) Overhaul new code with useful features to increase usability.
+4) Overhaul the backend and work on code efficiency.
+5) Add paint and bells and whistles and finalize usability.
 6) Major release?
 
 Do this all while pushing out notebooks showcasing a variety of equity portfolio strategies and how they are implemented using whatever code I'm working with.
