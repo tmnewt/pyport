@@ -1,0 +1,70 @@
+import pandas as pd, numpy as np, scipy.optimize as sciop, sys
+import matplotlib.pyplot as plt
+from mytools import ask_to_display
+
+
+df = pd.read_pickle('silly_strat_dataframe.pkl')
+df_log_returns = np.log(df / df.shift(1))
+
+# look at recent 2015 to 2017 slice
+
+df_hist = df_log_returns.loc['2015':'2016']
+mean_returns = df_hist.mean()
+
+ask_to_display('Display historical dataframe?', df_hist)
+
+number_comp = len(df_hist.columns)
+weight_guess = number_comp * [1. / number_comp,]
+
+def port_stats(weights):
+    weight_array = np.array(weights)
+    portfolio_return = np.sum(mean_returns * weight_array)*252
+    portfolio_vol = np.sqrt(np.dot(weight_array.T, np.dot(df_hist.cov()* 252, weight_array)))
+    sharpe_ratio = portfolio_return / portfolio_vol 
+    return np.array([portfolio_return, portfolio_vol, sharpe_ratio])
+
+def max_sharpe(weights):
+    return -port_stats(weights)[2]
+
+
+def min_func_port(weights):
+    return port_stats(weights)[1]
+
+
+cons = ({'type': 'eq', 'fun': lambda x: np.sum(x)-1})
+bnds = tuple((0,1) for x in range(number_comp))
+
+optimize = sciop.minimize(max_sharpe,
+                          weight_guess,
+                          method = 'SLSQP',
+                          bounds= bnds,
+                          constraints = cons)
+
+
+trets = np.linspace(-0.10, 0.35)
+tvols = []
+bnds2 = tuple((0,1) for x in range(number_comp))
+count2 = 1
+for tret in trets:
+    cons2 = ({'type': 'eq', 'fun': lambda x: port_stats(x)[0] - tret},
+             {'type': 'eq', 'fun': lambda x: np.sum(x)-1})
+    res = sciop.minimize(min_func_port,
+                         weight_guess,
+                         method = 'SLSQP',
+                         bounds = bnds2,
+                         constraints = cons2)
+    print("Found "+ str(count2) + " target volatilities")
+    count2 += 1
+    tvols.append(res['fun'])
+tvols = np.array(tvols)
+
+plt.figure(figsize = (8,6))
+plt.scatter(tvols, trets, c = trets / tvols, marker = 'o')
+plt.plot(port_stats(optimize['x'])[1], port_stats(optimize['x'])[0], 'r*', markersize = 16.0)
+#plt.plot(port_stats(optv['x'])[1], stats(optv['x'])[0], 'y*', markersize = 16.0);
+plt.grid(True)
+plt.colorbar(label = 'Sharpe ratio')
+
+plt.show(block = True)
+
+sys.exit()
