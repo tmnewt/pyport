@@ -12,6 +12,10 @@ You can read the Jupyter notebooks here on Github. I will be uploading the actua
 ## Summary Goal Stages:
 
 1) ~~Write up the original project with discussion.~~ Done!
+1.5) Investigate dependencies and related projects.
+
+1.?) Experiemnt with different ideas
+
 2) Improve the code structure (pretty much rewrite all the code).
 3) Overhaul new code with useful features to increase usability.
 4) Overhaul the backend and work on code efficiency.
