@@ -1,6 +1,6 @@
 
 import pandas as pd, numpy as np, scipy.optimize as sciop
-#import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt
 
 class Markowitz(object):
     def __init__(self, df_log_returns, observation_start, observation_end , freq_of_observations, can_short = False):
@@ -30,6 +30,8 @@ class Markowitz(object):
             cons = ({'type': 'eq', 'fun': lambda x: np.sum(x)-1})
             bnds = tuple((0,1) for x in range(self.num_tickers)) 
 
+        self.bounds = bnds # to be used for efficient frontier.
+
         opt = sciop.minimize(self.max_sharpe_ratio,
                       weight_guess,
                       method = 'SLSQP',
@@ -41,7 +43,6 @@ class Markowitz(object):
         ticker_dictionary = {}
         for i in range(self.num_tickers):
             ticker_dictionary[self.tickers[i]] = self.portfolio_allocation[i]
-
 
         self.allocation_by_ticker = ticker_dictionary
 
@@ -57,29 +58,68 @@ class Markowitz(object):
         return -sharp_ratio
 
     def display_portfolio_statistics(self):
-        print('Expected Portfolio Return')
+        print('Expected Portfolio Return: {}'.format(self.portfolio_return))
+        print('Portfolio Volatility: {}'.format(self.portfolio_volatility))
+        print('Portfolio\'s Sharpe Ratio: {}'.format(self.sharp_ratio))
+
+    def display_summary(self):
+        pass
+
+    def minimize_volatility(self, weights):
+        weight_array = np.array(weights)
+        temp_return = np.sum(self.mean_returns * weight_array)*self.frequency_of_observations
+        temp_volatility = np.sqrt(np.dot(weight_array.T, np.dot(self.cov_frame , weight_array)))
+        return np.array([temp_return, temp_volatility])
+
+    def minimize_volatility_helper(self, weights):
+        return self.minimize_volatility(weights)[1]
+
+    def display_efficient_frontier(self, include_messages = False):
+        if include_messages:
+            print('Calculating Efficient Frontier')
+        target_returns = np.linspace(-0.05, 0.60, num = 30)
+        target_volatilities = []
+        counter = 1
+        weight_guess = self.num_tickers * [1. /self.num_tickers]
+        for target in target_returns:
+            cons = ({'type': 'eq', 'fun': lambda x, target = target: self.minimize_volatility(x)[0] - target},
+                    {'type': 'eq', 'fun': lambda x: np.sum(x)-1})
+            frontier_point = sciop.minimize(self.minimize_volatility_helper,
+                                            weight_guess,
+                                            bounds = self.bounds,
+                                            constraints= cons)
+            if include_messages:
+                print("Found "+ str(counter) + " target volatilities")
+            counter += 1
+            target_volatilities.append(frontier_point['fun'])
+        target_volatilities = np.array(target_volatilities)
+        # following is temporary, will change
+        return target_volatilities
 
 
+    def frontier_calc(self, weights):
+        pass
+        
+    
 
+    def generate_random_draws(self):
+        pass
 
-
+#### Testing
 
 
 df = pd.read_pickle('silly_strat_dataframe.pkl')
 df_log = np.log(df/ df.shift(1))
-print(df_log)
 
 
-#
 port = Markowitz(df_log, '2015', '2016', 252, can_short=True)
-print(port.can_short)
-print(port.tickers)
-print(port.portfolio_return)
-print(port.portfolio_volatility)
-print(port.sharp_ratio)
-print(port.portfolio_allocation)
+
+print(port.display_portfolio_statistics())
 
 print(port.allocation_by_ticker)
+
+print(port.display_efficient_frontier(True))
+
 
     
     
