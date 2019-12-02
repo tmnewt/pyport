@@ -1,0 +1,3 @@
+Need to update gitignore
+
+How do I package everything correctly?

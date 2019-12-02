@@ -127,3 +127,6 @@ class Markowitz(object):
         plt.colorbar(label = 'Sharpe ratio')
         plt.show(block = True)
 
+
+    def allocate_weights(self):
+        return self.portfolio_allocation

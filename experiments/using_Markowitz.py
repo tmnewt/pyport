@@ -1,5 +1,5 @@
 #### Testing
-import Markowitz
+from markowitz import Markowitz
 import pandas as pd, numpy as np
 
 df = pd.read_pickle('silly_strat_dataframe.pkl')
