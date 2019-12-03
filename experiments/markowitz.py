@@ -33,13 +33,13 @@ class Markowitz(object):
 
         self.bounds = bnds # to be used for efficient frontier.
 
-        opt = sciop.minimize(self.max_sharpe_ratio,
+        self.portfolio_allocation = sciop.minimize(self.max_sharpe_ratio,
                       weight_guess,
                       method = 'SLSQP',
                       bounds= bnds,
-                      constraints = cons)
+                      constraints = cons)['x'].round(3)
         
-        self.portfolio_allocation = opt['x'].round(3)
+        # self.portfolio_allocation = opt['x'].round(3)
         
         ticker_dictionary = {}
         for i in range(self.num_tickers):
@@ -81,9 +81,14 @@ class Markowitz(object):
         
         # calculate y axis window bounds, so as to not overplot
         y_ceiling = max(self.mean_returns*self.frequency_of_observations)
+
+        # but just in case the window is too high        
+        if y_ceiling > 0.5:
+            y_ceiling = 0.5
         
         if include_messages:
             print('Ceiling is {}'.format(y_ceiling))
+
 
         target_returns = np.linspace(0.0, y_ceiling, num = 30)
         target_volatilities = []
@@ -124,6 +129,8 @@ class Markowitz(object):
         
         # plot everything.
         plt.grid(True)
+        #plt.xlim(-0.1, 0.4)
+        #plt.ylim(-0.2, 0.5)
         plt.colorbar(label = 'Sharpe ratio')
         plt.show(block = True)
 
