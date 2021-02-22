@@ -1,7 +1,0 @@
-Need to update gitignore
-
-
-In markowitz.py change self.allocation_by_ticker from a dictionary to a series with 
-tickers as the index...
-
-How do I package everything correctly?
