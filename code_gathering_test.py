@@ -37,8 +37,8 @@ def get_time_series_dataframe(data_file_path, instructions) -> DataFrame:
 
 def _cast_path_object(pathlike) -> Path:
     if not isinstance(pathlike, Path):
-        pathlike = Path(pathlike)
-    return pathlike
+        path_obj = Path(pathlike)
+    return path_obj
 
 def raise_error_with_info(error_raised, file_path, extra_notes:str = None):
     if not isinstance(file_path, Path):
@@ -77,8 +77,22 @@ def pyport_loader(data_file_path:Path, instructions_file:Path) -> DataFrame:
     print('Done loading')
     return times_series_dataframe, instructions_dict
 
+def _helper_df_cast(df:DataFrame) -> DataFrame:
+    return df
+
 ts_df, instructions = pyport_loader('storageloads/testpickle.pkl', 'testloads/instructions.json')
 
+ts_df = _helper_df_cast(ts_df)
+
+ts_df.dropna(axis='columns', how='any', inplace=True)
+log_ts_df = np.log(ts_df / ts_df.shift(1))
+log_ts_df = _helper_df_cast(log_ts_df)
+
+
+
+
+
+#print(log_ts_df)
 #print(ts_df.isna().sum())
 
 #print(ts_df.dropna(axis='columns', how='any'))
