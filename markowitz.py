@@ -3,7 +3,7 @@ import pandas as pd, numpy as np, scipy.optimize as sciop
 import matplotlib.pyplot as plt
 
 
-class Markowitz(object):
+class Markowitz:
     def __init__(self, df_log_returns, observation_start, observation_end , frequency_of_observations, can_short = False):
         self.df_log_returns = df_log_returns
         self.observation_start = observation_start
@@ -38,7 +38,10 @@ class Markowitz(object):
                       method = 'SLSQP',
                       bounds= bnds,
                       constraints = cons)['x'].round(3)
-        
+        # scipy.optimize.minimize returns OptimizeResult Object which seems to be dict like.
+        # use ['x'] to get the ndarray solution to the optimization.
+
+
         # self.portfolio_allocation = opt['x'].round(3)
         
         ticker_dictionary = {}

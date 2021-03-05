@@ -80,13 +80,14 @@ def pyport_loader(data_file_path:Path, instructions_file:Path) -> DataFrame:
 def _helper_df_cast(df:DataFrame) -> DataFrame:
     return df
 
-ts_df, instructions = pyport_loader('storageloads/testpickle.pkl', 'testloads/instructions.json')
 
-ts_df = _helper_df_cast(ts_df)
-
-ts_df.dropna(axis='columns', how='any', inplace=True)
-log_ts_df = np.log(ts_df / ts_df.shift(1))
-log_ts_df = _helper_df_cast(log_ts_df)
+#ts_df, instructions = pyport_loader('storageloads/testpickle.pkl', 'testloads/instructions.json')
+#
+#ts_df = _helper_df_cast(ts_df)
+#
+#ts_df.dropna(axis='columns', how='any', inplace=True)
+#log_ts_df = np.log(ts_df / ts_df.shift(1))
+#log_ts_df = _helper_df_cast(log_ts_df)
 
 
 
