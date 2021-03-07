@@ -1,6 +1,5 @@
 # February 22nd 2021.
 
-from typing import Iterator
 from pathlib import Path
 import json
 import pandas
@@ -9,9 +8,13 @@ from pandas import DataFrame
 
 
 
-def fetch_data(tickers:list, start:str, end:str, interval:str = 'd', dropna_how='any') -> DataFrame:
+def fetch_data(assets:list, analysis_start_date:str, analysis_end_date:str,
+               interval:str = 'd', dropna_how='any') -> DataFrame:
     "Will fetch financial data and wrangle it into a pandas dataframe"
-    data_pull = pdr.get_data_yahoo(tickers, start, end, interval=interval)
+    data_pull = pdr.get_data_yahoo(assets,
+                                   analysis_start_date,
+                                   analysis_end_date,
+                                   interval=interval)
     data_pull = data_pull.loc[:, pandas.IndexSlice['Adj Close', :]]
     data_pull.columns = data_pull.columns.levels[1]
     data_pull.dropna(axis='columns', how=dropna_how, inplace=True)
@@ -30,11 +33,23 @@ def get_time_series_dataframe(data_file_path, instructions) -> DataFrame:
     try:
         financial_time_series_dataframe = pandas.read_pickle(data_file_path)
     except FileNotFoundError:
-        # get data and save it to the name
+        # get data and save under the title of universe_name
         print(f'Could not find time series data file "{data_file_path.name}". Downloading and saving')
-        financial_time_series_dataframe = fetch_data(**instructions)
+        financial_time_series_dataframe = fetch_data(**_get_fetch_context(instructions))
         _pickle_frame(financial_time_series_dataframe, data_file_path)
     return financial_time_series_dataframe
+
+def _get_fetch_context(instructions:dict) -> dict:
+    fetch_context = {}
+    fetch_context['assets']              = instructions['universe']['assets']
+    fetch_context['analysis_start_date'] = instructions['universe']['analysis_start_date']
+    fetch_context['analysis_end_date']   = instructions['universe']['analysis_end_date']
+    fetch_context['interval']            = instructions['universe']['interval']
+    fetch_context['dropna_how']          = instructions['universe']['dropna_how']
+    return fetch_context
+
+def _get_universe_name(instructions:dict) -> str:
+    pass
 
 def _cast_path_object(pathlike) -> Path:
     return Path(pathlike)

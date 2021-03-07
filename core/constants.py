@@ -1,3 +1,0 @@
-OBSERVATION_FREQENCY = {
-    ""
-}

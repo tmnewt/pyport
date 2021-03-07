@@ -1,12 +1,26 @@
 {
-    "start": "2015",
-    "end": "2021",
-    "interval": "d",
-    "asset_universe": [
-        "LOW" , "BKNG", "DD"  , "AMT" , "GE"  , "RSG", "SNPS", "VEEV", 
-        "DXC" , "BG"  , "LAMR", "KIM", "HELE", "SIGI",
-        "FHB" , "CRS" , "AIMC", "TEX" , "FORM", "CSGS", "AROC", "ATRA",
-        "ANDE", "TELL", "GFF" , "LMNX", "ACLS", "GOOD", "AKBA", "RILY",
-        "LAND", "FBMS", "NKSH", "TWIN"
-    ]
+    "universe": {
+        "universe_name": "silly",
+        "analysis_start_date": "2015",
+        "analysis_end_date": "2021",
+        "interval": "d",
+        "dropna_how": "any",
+        "assets": [
+            "LOW" , "BKNG", "DD"  , "AMT" , "GE"  , "RSG", "SNPS", "VEEV", 
+            "DXC" , "BG"  , "LAMR", "KIM", "HELE", "SIGI",
+            "FHB" , "CRS" , "AIMC", "TEX" , "FORM", "CSGS", "AROC", "ATRA",
+            "ANDE", "TELL", "GFF" , "LMNX", "ACLS", "GOOD", "AKBA", "RILY",
+            "LAND", "FBMS", "NKSH", "TWIN"
+        ]
+    },
+    "commands": {
+        "strategy_start": "2017",
+        "lookback_length": 2,
+        "lookback_time_quantifier": "years",
+        "rebalance": "quarter",
+        "shorting": false,
+        "short_limit": 0.1,
+        "long_floor": 0.0,
+        "long_ceiling": 1.0
+    }
 }

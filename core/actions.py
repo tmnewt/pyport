@@ -6,6 +6,7 @@ from scipy.optimize import OptimizeResult
 
 from . import defaults
 
+
 def calc_log_returns(ts_df:DataFrame) -> DataFrame:
     "Returns log returns of time series dataframe"
     return numpy.log(ts_df / ts_df.shift(1))
@@ -78,22 +79,22 @@ def _maximization_helper_sharpe_ratio(weights_arr:ndarray, mean_returns:Series, 
     return portfolio_statics(weights_arr, mean_returns, covariance_matrix)[2]
 
 
-def set_allocation_bounds(num_assets, lower:float=0.0, upper:float=1.0):
+def set_allocation_bounds(num_assets, lower_allocation:float=0.0, upper_allocation:float=1.0):
     """Returns allocation bound for assets
     
     To enable shorting of assets set `lower` to be less than 0.\n
     To enable lower floor of asset allocation set `lower`.
     """
-    if  lower > upper:
+    if  lower_allocation > upper_allocation:
         raise ValueError('The lower value must be less than the upper value')
     
-    if lower > (1/num_assets):
+    if lower_allocation > (1/num_assets):
         print('Lower value was found to be greater than 1/num_assets! Setting lower value to 0 for safety.')
-        lower = 0.0
+        lower_allocation = 0.0
 
-    if upper > 1.0:
+    if upper_allocation > 1.0:
         raise ValueError('Upper may not be more than 1.0. This implies borrowing money, something not yet implemented')
-    bounds = tuple((lower, upper) for _ in range(num_assets))
+    bounds = tuple((lower_allocation, upper_allocation) for _ in range(num_assets))
     return bounds
 
 
