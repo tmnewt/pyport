@@ -1,0 +1,12 @@
+{
+    "start": "2015",
+    "end": "2021",
+    "interval": "d",
+    "asset_universe": [
+        "LOW" , "BKNG", "DD"  , "AMT" , "GE"  , "RSG", "SNPS", "VEEV", 
+        "DXC" , "BG"  , "LAMR", "KIM", "HELE", "SIGI",
+        "FHB" , "CRS" , "AIMC", "TEX" , "FORM", "CSGS", "AROC", "ATRA",
+        "ANDE", "TELL", "GFF" , "LMNX", "ACLS", "GOOD", "AKBA", "RILY",
+        "LAND", "FBMS", "NKSH", "TWIN"
+    ]
+}

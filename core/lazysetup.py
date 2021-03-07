@@ -1,17 +1,16 @@
-import numpy
-from numpy import ndarray
-from pandas import DataFrame, Series
-from scipy import optimize
-from scipy.optimize import OptimizeResult
 
+from core.settings import BASE_DIR
+from core.dataloader import loader
 from core.actions import (
-    calc_log_returns      , slice_ts_df                   , calc_expected_returns_on_slice    ,
-    calc_covariance_matrix, calc_expected_portfolio_return, calc_expected_portfolio_volatility,
-    calc_sharpe_ratio     , portfolio_statics             , optimize_portfolio                ,
-    set_allocation_bounds , set_optimization_constraints  , build_weight_guess                ,
+    calc_log_returns             , slice_ts_df        , calc_expected_returns_on_slice ,
+    calc_covariance_matrix       , optimize_portfolio , set_allocation_bounds ,
+    set_optimization_constraints , build_weight_guess
 )
 
-def run_i_am_lazy(ts_df:DataFrame):
+def lazy_demo(verbose:bool=False):
+    ts_df, instructions = loader(
+                        BASE_DIR/'pyport_examples/data/silly.pkl',
+                        BASE_DIR/'pyport_examples/instructions/silly.json')
     assets       = list(ts_df.columns.values)
     num_assets   = len(assets)
     lr_df        = calc_log_returns(ts_df)
