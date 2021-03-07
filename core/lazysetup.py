@@ -1,5 +1,5 @@
 
-from core.settings import BASE_DIR
+from core.settings import LAZY_DATASET, LAZY_INSTRUCTIONS
 from core.dataloader import loader
 from core.actions import (
     calc_log_returns             , slice_ts_df        , calc_expected_returns_on_slice ,
@@ -7,10 +7,11 @@ from core.actions import (
     set_optimization_constraints , build_weight_guess
 )
 
+
 def lazy_demo(verbose:bool=False):
     ts_df, instructions = loader(
-                        BASE_DIR/'pyport_examples/data/silly.pkl',
-                        BASE_DIR/'pyport_examples/instructions/silly.json')
+                        LAZY_DATASET,
+                        LAZY_INSTRUCTIONS)
     assets       = list(ts_df.columns.values)
     num_assets   = len(assets)
     lr_df        = calc_log_returns(ts_df)
@@ -28,3 +29,15 @@ def lazy_demo(verbose:bool=False):
         bounds=bounds
     )
     return allocation, opt_obj
+
+
+
+def setup_up_to_log_returns():
+    ts_df, instructions = loader(
+                        LAZY_DATASET,
+                        LAZY_INSTRUCTIONS)
+    assets       = list(ts_df.columns.values)
+    num_assets   = len(assets)
+    lr_df        = calc_log_returns(ts_df)
+
+    return locals()

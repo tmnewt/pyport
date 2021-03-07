@@ -1,0 +1,3 @@
+OBSERVATION_FREQENCY = {
+    ""
+}

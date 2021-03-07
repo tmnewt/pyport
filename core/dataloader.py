@@ -9,11 +9,12 @@ from pandas import DataFrame
 
 
 
-def fetch_data(tickers:list, start:str, end:str, interval:str = 'd') -> DataFrame:
+def fetch_data(tickers:list, start:str, end:str, interval:str = 'd', dropna_how='any') -> DataFrame:
     "Will fetch financial data and wrangle it into a pandas dataframe"
     data_pull = pdr.get_data_yahoo(tickers, start, end, interval=interval)
     data_pull = data_pull.loc[:, pandas.IndexSlice['Adj Close', :]]
     data_pull.columns = data_pull.columns.levels[1]
+    data_pull.dropna(axis='columns', how=dropna_how, inplace=True)
     return data_pull
 
 
@@ -80,24 +81,3 @@ def loader(data_file_path:Path, instructions_file:Path, dropna_how:str='any') ->
 
 def _helper_df_cast(df:DataFrame) -> DataFrame:
     return df
-
-
-#ts_df, instructions = pyport_loader('storageloads/testpickle.pkl', 'testloads/instructions.json')
-#
-#ts_df = _helper_df_cast(ts_df)
-#
-#ts_df.dropna(axis='columns', how='any', inplace=True)
-#log_ts_df = np.log(ts_df / ts_df.shift(1))
-#log_ts_df = _helper_df_cast(log_ts_df)
-
-
-
-
-
-#print(log_ts_df)
-#print(ts_df.isna().sum())
-
-#print(ts_df.dropna(axis='columns', how='any'))
-#print(ts_df.dropna(axis='columns', how='any', thresh=10))
-#print(ts_df.dropna(axis='columns', how='all'))
-
