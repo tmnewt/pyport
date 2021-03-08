@@ -19,8 +19,8 @@ def slice_ts_df(ts_df:DataFrame, start, end) -> DataFrame:
     return ts_df.loc[start:end]
 
 
-def calc_expected_returns_on_slice(ts_df:DataFrame, adjustment:int=252) -> Series:
-    return ts_df.mean()*adjustment
+def calc_expected_returns_on_slice(ts_df:DataFrame, frequency:int=252) -> Series:
+    return ts_df.mean()*frequency
 
 
 def calc_covariance_matrix(ts_df:DataFrame, frequency:int=252) -> DataFrame:
@@ -36,12 +36,7 @@ def calc_expected_portfolio_return(weight_arr:ndarray, mean_returns:Series) -> f
 
 
 def calc_expected_portfolio_volatility(weight_arr:ndarray, covariance_matrix:DataFrame) -> float:
-    return numpy.sqrt(
-        numpy.dot(
-            weight_arr.T,
-            numpy.dot(
-                covariance_matrix,
-                weight_arr)))
+    return numpy.sqrt(numpy.dot(weight_arr.T, numpy.dot(covariance_matrix, weight_arr)))
 
 
 def calc_sharpe_ratio(expected_portfolio_return:float, portfolio_volatility:float) -> float:
@@ -51,17 +46,17 @@ def calc_sharpe_ratio(expected_portfolio_return:float, portfolio_volatility:floa
 def portfolio_statics(weights_arr:ndarray, mean_returns:Series, covariance_matrix:DataFrame) -> list:
     portfolio_return = calc_expected_portfolio_return(weights_arr, mean_returns)
     portfolio_volatility = calc_expected_portfolio_volatility(weights_arr, covariance_matrix)
-    sharpe_ratio = portfolio_return / portfolio_volatility
+    sharpe_ratio = -1*(portfolio_return / portfolio_volatility)
     return [portfolio_return, portfolio_volatility, sharpe_ratio]
 
 
 
-def optimize_portfolio(weight_arr:ndarray,          mean_returns:Series,
+def optimize_portfolio(weight_guess:ndarray,          mean_returns:Series,
                        covariance_matrix:DataFrame, constraints:dict, 
                        bounds):
     optimization_result = optimize.minimize(
         fun = _maximization_helper_sharpe_ratio,
-        x0  = weight_arr, 
+        x0  = weight_guess, 
         args = (mean_returns, covariance_matrix),
         method = 'SLSQP',
         constraints= constraints,
@@ -103,8 +98,8 @@ def set_optimization_constraints(override_constraints_dict:dict=None):
         return defaults.optimization_constraints
     return override_constraints_dict
 
-def build_weight_guess(tickers:list) -> list:
-    return numpy.array(len(tickers) * [1. / len(tickers)])
+def build_weight_guess(num_assets) -> list:
+    return numpy.array(num_assets * [1. / num_assets])
 
 
 def tracked_returns(period_weights:ndarray, data_frame:DataFrame, df_log_returns:DataFrame) -> ndarray:
@@ -116,3 +111,56 @@ def tracked_returns(period_weights:ndarray, data_frame:DataFrame, df_log_returns
     tracking_returns = numpy.array(tracking_returns)
     tracking_returns[numpy.isnan(tracking_returns)]=0
     return tracking_returns + 1
+
+
+def efficient_frontier(num_assets, mean_returns, covariance_matrix, bounds):
+    y_ceiling = max(mean_returns)
+    target_frontier_returns = numpy.linspace(0.0, y_ceiling, num=30)
+    result_frontier_volatilities= []
+    weight_guess = build_weight_guess(num_assets)
+
+    for target in target_frontier_returns:
+        cons = ({'type': 'eq', 'fun': lambda x, target = target : calc_expected_portfolio_return(x, mean_returns) - target},
+                {'type': 'eq', 'fun': lambda x: numpy.sum(x)-1})
+        frontier_volatility = optimize.minimize(
+                    fun         = _minimize_volatility,
+                    x0          = weight_guess,
+                    args        = (covariance_matrix,),
+                    bounds      = bounds,
+                    constraints = cons)['fun']
+        result_frontier_volatilities.append(frontier_volatility)
+    result_frontier_volatilities = numpy.array(result_frontier_volatilities)
+    return target_frontier_returns, result_frontier_volatilities
+
+def random_portfolio_draws(num_assets:int, mean_returns:ndarray, covariance_matrix:DataFrame,
+                                   num_draws:int=1000, track_draw_weights=False):
+    if track_draw_weights:
+        draw_weights = numpy.zeros(num_draws, num_assets)
+    else:
+        draw_weights = None
+    draw_returns        = numpy.zeros(num_draws)
+    draw_volatilities   = numpy.zeros(num_draws)
+    draw_sharpe_ratios  = numpy.zeros(num_draws)
+
+
+    for draw in range(num_draws):
+        weights = _generate_random_allocation_weights(num_assets)
+        if track_draw_weights:
+            draw_weights[draw, :] = weights
+        (draw_return, draw_volatility, draw_sharpe_ratio) = portfolio_statics(weights, mean_returns, covariance_matrix)
+        draw_returns[draw]       = draw_return
+        draw_volatilities[draw]  = draw_volatility
+        draw_sharpe_ratios[draw] = draw_sharpe_ratio
+    
+    return [draw_returns, draw_volatilities, draw_sharpe_ratios, draw_weights]
+
+
+def _generate_random_allocation_weights(num_assets):
+    weights = numpy.array(numpy.random.random(num_assets))
+    weights /= numpy.sum(weights)
+    return weights
+
+def _minimize_volatility(weights, covariance_matrix):
+    return calc_expected_portfolio_volatility(weights, covariance_matrix)
+
+
