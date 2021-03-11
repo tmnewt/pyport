@@ -1,6 +1,6 @@
 {
     "universe": {
-        "universe_name": "silly",
+        "related_dataset": "silly.pkl",
         "analysis_start_date": "2015",
         "analysis_end_date": "2021",
         "interval": "d",
@@ -19,8 +19,11 @@
         "lookback_time_quantifier": "years",
         "rebalance": "quarter",
         "shorting": false,
-        "short_limit": 0.1,
+        "short_limit": -0.1,
         "long_floor": 0.0,
-        "long_ceiling": 1.0
-    }
+        "long_ceiling": 1.0,
+        "bounds": "default",
+        "constraints": "default"
+    },
+    "description": "The silly portfolio that started this project."
 }

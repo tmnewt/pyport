@@ -11,3 +11,5 @@ YOUR_PYPORT_STORAGE = BASE_DIR/'your_pyport'
 EXAMPLES_DIR = BASE_DIR/'pyport_examples'
 LAZY_DATASET = EXAMPLES_DIR/'data/silly.pkl'
 LAZY_INSTRUCTIONS = EXAMPLES_DIR/'instructions/silly.json'
+
+NAMING_DISCREPENCY = True

@@ -1,18 +1,19 @@
+from pathlib import Path
 from core.settings import YOUR_PYPORT_STORAGE
 
-try:
-    YOUR_PYPORT_STORAGE.mkdir()
-except FileExistsError:
-    pass
+def _try_mkdir(path:Path) -> None:
+    try:
+        path.mkdir()
+    except FileExistsError:
+        pass
 
-data_path = YOUR_PYPORT_STORAGE/'data'
-try:
-    data_path.mkdir()
-except FileExistsError:
-    pass
+_try_mkdir(YOUR_PYPORT_STORAGE)
 
-instructions = YOUR_PYPORT_STORAGE/'instructions'
-try:
-    instructions.mkdir()
-except FileExistsError:
-    pass
+DATA_PATH = YOUR_PYPORT_STORAGE/'data'
+_try_mkdir(DATA_PATH)
+
+UNIVERSES_PATH = YOUR_PYPORT_STORAGE/'universes'
+_try_mkdir(UNIVERSES_PATH)
+
+#GROUPS_PATH = YOUR_PYPORT_STORAGE/'groups'
+#_try_mkdir(GROUPS_PATH)
