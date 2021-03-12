@@ -5,7 +5,7 @@ from core.universe.attribute_gets import (
     _get_description
     )
 
-class Portfolio:
+class PyPort:
     def __init__(self, port_name:str):
         self._port_name = port_name
 
@@ -73,9 +73,15 @@ class Portfolio:
     def universe_start(self):
         return self._analysis_start_date
 
+    @universe_start.setter
+    def universe_start(self, value):
+        self._analysis_start_date = value
+
     @property
     def universe_end(self):
         return self._analysis_end_date
+
+
 
     @property
     def interval(self) -> str:
@@ -136,6 +142,5 @@ class Portfolio:
     @property
     def constraints(self) -> str:
         return self._constraints
-
 
 
