@@ -144,7 +144,6 @@ def load_universe(name:str, fetch_missing_data:bool=True, save_dataframe:bool=Tr
 
     universe_instructions = _load_instruction(universe_location)
     related_dataset = universe_instructions['universe']['related_dataset']
-    print(related_dataset)
     dataset_location = DATA_PATH/related_dataset
 
 
