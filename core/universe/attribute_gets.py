@@ -26,9 +26,3 @@ def _get_command_attributes(instructions:dict) -> dict:
         commands['bounds'],
         commands['constraints'],
     ]
-
-
-
-def _get_description(instructions:dict) -> str:
-    return instructions['description']
-
