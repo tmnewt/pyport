@@ -6,8 +6,8 @@ import pandas
 import pandas_datareader as pdr
 from pandas import DataFrame
 
-from core.settings import NAMING_DISCREPENCY
-from core.storage_setup import DATA_PATH, UNIVERSES_PATH
+from .settings import NAMING_DISCREPENCY
+from .storage_setup import DATA_PATH, UNIVERSES_PATH
 
 
 def fetch_data(assets:list, analysis_start_date:str, analysis_end_date:str,

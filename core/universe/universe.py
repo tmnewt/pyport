@@ -1,5 +1,5 @@
-from core.dataloader import load_universe as dataloader_universe
-from core.universe.attribute_gets import (
+from ..dataloader import load_universe as dataloader_universe
+from .attribute_gets import (
     _get_universe_attributes,
     _get_command_attributes,
     _get_description

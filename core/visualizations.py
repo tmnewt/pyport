@@ -4,7 +4,7 @@ You are always welcome to BYO tools."""
 
 import matplotlib.pyplot as plt
 
-def plot_pyport_basic(solution_info:list, frontier_info:list, random_draw_info:list=[], *args, **kwargs):
+def plot_pyport_basic(solution_info:list, frontier_info:list, random_draw_info:list=None, **kwargs):
     plt.figure(figsize=(8, 8))
 
     solution_returns      = solution_info[0]

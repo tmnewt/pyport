@@ -1,1 +1,1 @@
-from core import storage_setup
+from . import storage_setup

@@ -1,5 +1,5 @@
 from pathlib import Path
-from core.settings import YOUR_PYPORT_STORAGE
+from .settings import YOUR_PYPORT_STORAGE
 
 def _try_mkdir(path:Path) -> None:
     try:
