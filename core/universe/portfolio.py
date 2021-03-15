@@ -27,6 +27,7 @@ class Portfolio:
         self._log_returns:              DataFrame
         self._assets:                   list
         self._mean_returns:             Series
+        self._covariance_matrix:        DataFrame
 
 
     @property
@@ -90,10 +91,21 @@ class Portfolio:
         except AttributeError:
             self._assets = list(self.log_returns.columns.values)
             return self._assets
-    
+
+
     @property
     def mean_returns(self) -> Series:
-        pass
+        try:
+            return self._mean_returns
+        except AttributeError:
+            self._mean_returns = self.universe.calc_mean_returns(self.log_returns)
+            return self._mean_returns
 
+    @property
+    def covariance_matrix(self) -> Series:
+        try:
+            return self._covariance_matrix
+        except AttributeError:
+            self._covariance_matrix = self.universe.calc_log_slice_covariance_matrix(self.log_returns)
+            return self._covariance_matrix
 
-    

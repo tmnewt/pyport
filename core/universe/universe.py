@@ -1,13 +1,14 @@
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
 
-from pandas import DataFrame
-from pandas import Timestamp
+from pandas import DataFrame, Timestamp, Series
 
 from ..dataloader import load_universe as dataloader_universe
 from ..actions import (
     _calc_log_returns,
-    _slice_ts_df
+    _slice_ts_df,
+    _calc_expected_returns_on_slice,
+    _calc_covariance_matrix,
     )
 from .attribute_gets import (
     _get_universe_attributes,
@@ -301,12 +302,25 @@ class PyPort:
     def slice_ts_df(ts_df:DataFrame, start:Timestamp, end:Timestamp) -> DataFrame:
         return _slice_ts_df(ts_df, start, end)
 
+
     def uni_slice_ts_df(self, start:Timestamp, end:Timestamp) -> DataFrame:
         return self.slice_ts_df(self.ts_df, start, end)
 
+
     def uni_slice_log_ts_df(self, start:Timestamp, end:Timestamp) -> DataFrame:
         return self.slice_ts_df(self.log_ts_df, start, end)
-    
+
+
+    @staticmethod
+    def calc_mean_returns(log_return_slice:DataFrame) -> Series:
+        return _calc_expected_returns_on_slice(log_return_slice)
+
+    @staticmethod
+    def calc_log_slice_covariance_matrix(log_return_slice:DataFrame):
+        return _calc_covariance_matrix(log_return_slice)
+
+
+
     def run_strategy(self):
         pass
 
@@ -316,4 +330,3 @@ class PyPort:
 
 
 
-    
