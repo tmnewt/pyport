@@ -1,7 +1,10 @@
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
 
+from numpy import ndarray
 from pandas import DataFrame, Timestamp, Series
+from scipy.optimize import OptimizeResult
+
 
 from ..dataloader import load_universe as dataloader_universe
 from ..actions import (
@@ -9,20 +12,29 @@ from ..actions import (
     _slice_ts_df,
     _calc_expected_returns_on_slice,
     _calc_covariance_matrix,
-    )
+    set_allocation_bounds,
+    _optimize_result,
+    _get_allocation,
+    _guess_weights,
+    _track_returns)
+
 from .attribute_gets import (
     _get_universe_attributes,
-    _get_command_attributes,
-    )
+    _get_command_attributes,)
+
 from ..utils import datecalc
+from ..defaults import optimization_constraints
+from .portfolio import Portfolio
+
 
 # TODO: extract new "rebalance_frequency_strictness" 
+# TODO: add doc strings
 class PyPort:
-    def __init__(self, port_name:str):
-        self._port_name = port_name
+    def __init__(self, pyport_name:str):
+        self._pyport_name = pyport_name
 
         # preserves the initial information. This becomes useful later
-        self._initial_universe_instructions, self._ts_df = self._load_initial_universe(self._port_name)
+        self._initial_universe_instructions, self._ts_df = self._load_initial_universe(self._pyport_name)
         self._initial_universe_attributes = self._initial_universe_instructions['universe']
         self._initial_command_attributes  = self._initial_universe_instructions['commands']
         self._initial_description         = self._initial_universe_instructions['description']
@@ -35,7 +47,7 @@ class PyPort:
         self._analysis_end_date,
         self._interval,
         self._dropna_how,
-        self._assets) = self._get_initial_universe_attributes()
+        self._universe_assets) = self._get_initial_universe_attributes()
 
         # Instance attributes (known as the command attributes) which are often altered.
         # These are the primary pieces which when changed produce new results
@@ -48,20 +60,28 @@ class PyPort:
         self._short_limit,
         self._long_floor,
         self._long_ceiling,
-        self._bounds,
-        self._constraints,) = self._get_initial_command_attributes()
+        self._bounds_instructions,
+        self._constraints_instructions,) = self._get_initial_command_attributes()
 
-        # frequently reused attributes
+        # universal attributes
+        self._universal_bounds:   tuple
+        self._universal_constraints: dict
         self._log_ts_df: DataFrame
 
 
         # rolling "temporary" attributes
-        self._temp_datatime_start:      str
-        self._temp_datatime_end:        str
-        self._temp_log_returns_slice:   DataFrame
-        self._temp_cov_frame:           DataFrame
         self._lookback_context:         dict
-        self._timeline:        list
+        self._timeline:                 list
+        self._portfolios:               list
+
+
+    # TODO: add meaningful repr and str support. Perhaps use pandas to get pleasent dataframes
+    def __repr__(self):
+        for portfolio in self.portfolios:
+            print(portfolio)
+    def __str__(self):
+        for portfolio in self.portfolios:
+            print(portfolio)
 
 
 
@@ -97,7 +117,7 @@ class PyPort:
 
     @property
     def name(self):
-        return self._port_name
+        return self._pyport_name
 
     @property
     def initial_universe_instructions(self):
@@ -145,7 +165,7 @@ class PyPort:
 
     @property
     def universe_assets(self) -> list:
-        return self._assets
+        return self._universe_assets
 
     @property
     def strategy_start(self) -> Timestamp:
@@ -224,12 +244,30 @@ class PyPort:
         self._long_ceiling = value
 
     @property
-    def bounds_command(self) -> str:
-        return self._bounds
+    def universal_bounds(self) -> str:
+        # TODO: properly hookup _bounds_instructions
+        try:
+            return self._universal_bounds
+        except AttributeError:
+            self._universal_bounds = set_allocation_bounds(len(self.universe_assets), self.long_floor, self.long_ceiling)
+            return self._universal_bounds
+
+    @universal_bounds.setter
+    def universal_bounds(self, value):
+        self._universal_bounds = value
     
     @property
-    def constraints(self) -> str:
-        return self._constraints
+    def universal_constraints(self) -> str:
+        # TODO: properly hookup _constraints_instructions
+        try:
+            return self._universal_constraints
+        except AttributeError:
+            self._universal_constraints = optimization_constraints
+            return self._universal_constraints
+
+    @universal_constraints.setter
+    def universal_constraints(self, value):
+        self._universal_constraints = value
 
     @property
     def log_ts_df(self) -> DataFrame:
@@ -248,24 +286,6 @@ class PyPort:
             self._lookback_context = {self.lookback_length_quantifier: self.lookback_length}
             return self._lookback_context
 
-    #@property
-    #def temp_log_returns_slice(self):
-    #    try:
-    #        return self._temp_log_returns_slice
-    #    except AttributeError:
-    #        self._temp_log_returns_slice = self.log_ts_df[]
-#
-    #@property
-    #def last_cov_frame(self):
-    #    try:
-    #        return self._recent_cov_frame
-    #    except AttributeError:
-    #        return
-#
-    #@property
-    #def portfolios(self):
-    #    # return list of portfolios built during the universe run
-    #    pass
 
     @property
     def timeline(self):
@@ -275,6 +295,8 @@ class PyPort:
             self._timeline = self._build_timeline()
             return self._timeline
 
+
+    # TODO: this could easily be a function. Consider poping it out of the class.
     def _build_timeline(self) -> dict:
         timelines = {}
 
@@ -298,6 +320,7 @@ class PyPort:
 
         return timelines
 
+
     @staticmethod
     def slice_ts_df(ts_df:DataFrame, start:Timestamp, end:Timestamp) -> DataFrame:
         return _slice_ts_df(ts_df, start, end)
@@ -315,18 +338,49 @@ class PyPort:
     def calc_mean_returns(log_return_slice:DataFrame) -> Series:
         return _calc_expected_returns_on_slice(log_return_slice)
 
+
     @staticmethod
     def calc_log_slice_covariance_matrix(log_return_slice:DataFrame):
         return _calc_covariance_matrix(log_return_slice)
 
 
+    @staticmethod
+    def optimize(weight_guess:ndarray,          mean_returns:Series,
+                covariance_matrix:DataFrame,    constraints:dict, 
+                bounds:tuple) -> OptimizeResult:
+        result = _optimize_result(weight_guess, mean_returns, covariance_matrix, constraints, bounds)
+        return result
 
-    def run_strategy(self):
-        pass
+
+    @staticmethod
+    def get_allocation_array(result:OptimizeResult) -> ndarray:
+        allocation_array = _get_allocation(result)
+        return allocation_array
 
 
+    @staticmethod
+    def guess_weights(num_assets:int):
+        return _guess_weights(num_assets)
+
+    @property
+    def portfolios(self):
+        try:
+            return self._portfolios
+        except AttributeError:
+            self._portfolios = self.build_portfolios()
+            return self._portfolios
+
+    def build_portfolios(self):
+        strategy_portfolios = []
+        for portfolio_timeline_name, timeline_dates in self.timeline.items():
+            strategy_portfolios.append(Portfolio(portfolio_timeline_name, self, timeline_dates))
+        return strategy_portfolios
 
 
+    def print_portfolio_information(self):
+        for portfolio in self.portfolios:
+            print(portfolio)
 
 
+    
 

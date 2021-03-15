@@ -3,9 +3,9 @@ from core.settings import LAZY_DATASET, LAZY_INSTRUCTIONS
 from core.dataloader import loader
 from core.actions import (
     _calc_log_returns             , _slice_ts_df        , _calc_expected_returns_on_slice ,
-    _calc_covariance_matrix       , optimize_portfolio , set_allocation_bounds ,
-    set_optimization_constraints , build_weight_guess , portfolio_statics,
-    efficient_frontier   , random_portfolio_draws)
+    _calc_covariance_matrix       , _optimize_result , set_allocation_bounds ,
+    set_optimization_constraints , _guess_weights , portfolio_statics,
+    efficient_frontier   , random_portfolio_draws, _get_allocation)
 
 from core.visualizations import plot_pyport_basic
 
@@ -22,14 +22,16 @@ def lazy_demo(verbose:bool=False):
     covariance_matrix   = _calc_covariance_matrix(lr_slice)
     bounds       = set_allocation_bounds(num_assets)
     constraints  = set_optimization_constraints()
-    weight_guess = build_weight_guess(num_assets)
+    weight_guess = _guess_weights(num_assets)
     
-    allocation, opt_obj = optimize_portfolio(
+    opt_obj = _optimize_result(
         weight_guess = weight_guess,
         mean_returns= mean_returns,
         covariance_matrix = covariance_matrix,
         constraints=constraints,
         bounds=bounds)
+
+    allocation = _get_allocation(opt_obj)
     
     solution_info    = portfolio_statics(allocation, mean_returns, covariance_matrix)
     frontier_info    = efficient_frontier(num_assets, mean_returns, covariance_matrix, bounds)
@@ -38,14 +40,3 @@ def lazy_demo(verbose:bool=False):
     plot_pyport_basic(solution_info, frontier_info, random_draw_info)
     #return allocation, opt_obj
 
-
-
-def setup_up_to_log_returns():
-    ts_df, instructions = loader(
-                        LAZY_DATASET,
-                        LAZY_INSTRUCTIONS)
-    assets       = list(ts_df.columns.values)
-    num_assets   = len(assets)
-    lr_df        = _calc_log_returns(ts_df)
-
-    return locals()

@@ -53,23 +53,21 @@ def portfolio_statics(weights_arr:ndarray, mean_returns:Series, covariance_matri
 
 
 
-def optimize_portfolio(weight_guess:ndarray,          mean_returns:Series,
+def _optimize_result(weight_guess:ndarray,          mean_returns:Series,
                        covariance_matrix:DataFrame, constraints:dict, 
-                       bounds):
+                       bounds:tuple) -> OptimizeResult:
     optimization_result = optimize.minimize(
         fun = _maximization_helper_sharpe_ratio,
-        x0  = weight_guess, 
+        x0  = weight_guess,
         args = (mean_returns, covariance_matrix),
         method = 'SLSQP',
         constraints= constraints,
         bounds = bounds,
         )
-    optimization_result = _cast_optimize_result(optimization_result)
-    optimized_portfolio_allocation = optimization_result['x'].round(4)
-    return optimized_portfolio_allocation, optimization_result
+    return optimization_result
 
-def _cast_optimize_result(result) -> OptimizeResult:
-    return result
+def _get_allocation(optimization_result:OptimizeResult) -> ndarray:
+    return optimization_result['x'].round(4)
 
 
 def _maximization_helper_sharpe_ratio(weights_arr:ndarray, mean_returns:Series, covariance_matrix:DataFrame) -> float:
@@ -100,26 +98,25 @@ def set_optimization_constraints(override_constraints_dict:dict=None):
         return defaults.optimization_constraints
     return override_constraints_dict
 
-def build_weight_guess(num_assets) -> list:
+def _guess_weights(num_assets:int) -> list:
     return numpy.array(num_assets * [1. / num_assets])
 
 
-def tracked_returns(period_weights:ndarray, data_frame:DataFrame, df_log_returns:DataFrame) -> ndarray:
-    dates = list(data_frame.index.values)
-    tracking_returns = []
-    for date in dates:
-        tracking_returns.append(numpy.dot(df_log_returns.loc[date], period_weights))
+def _track_returns(allocation_array:ndarray, log_returns:DataFrame) -> ndarray:
+    tracked_returns = []
+    for date in log_returns.index.values:
+        tracked_returns.append(numpy.dot(log_returns.loc[date], allocation_array))
 
-    tracking_returns = numpy.array(tracking_returns)
-    tracking_returns[numpy.isnan(tracking_returns)]=0
-    return tracking_returns + 1
+    tracked_returns = numpy.array(tracked_returns)
+    tracked_returns[numpy.isnan(tracked_returns)]=0
+    return tracked_returns + 1
 
 
 def efficient_frontier(num_assets, mean_returns, covariance_matrix, bounds):
     y_ceiling = max(mean_returns)
     target_frontier_returns = numpy.linspace(0.0, y_ceiling, num=30)
     result_frontier_volatilities= []
-    weight_guess = build_weight_guess(num_assets)
+    weight_guess = _guess_weights(num_assets)
 
     for target in target_frontier_returns:
         cons = ({'type': 'eq', 'fun': lambda x, target = target : _calc_expected_portfolio_return(x, mean_returns) - target},
@@ -164,5 +161,4 @@ def _generate_random_allocation_weights(num_assets):
 
 def _minimize_volatility(weights, covariance_matrix):
     return _calc_expected_portfolio_volatility(weights, covariance_matrix)
-
 
