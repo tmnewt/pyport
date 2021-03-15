@@ -1,6 +1,7 @@
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
 
+import numpy
 from numpy import ndarray
 from pandas import DataFrame, Timestamp, Series
 from scipy.optimize import OptimizeResult
@@ -15,8 +16,7 @@ from ..actions import (
     set_allocation_bounds,
     _optimize_result,
     _get_allocation,
-    _guess_weights,
-    _track_returns)
+    _guess_weights)
 
 from .attribute_gets import (
     _get_universe_attributes,
@@ -48,6 +48,9 @@ class PyPort:
         self._interval,
         self._dropna_how,
         self._universe_assets) = self._get_initial_universe_attributes()
+        #TODO: fix discrepency between declared assets and actual.
+
+        self._apply_drophow()
 
         # Instance attributes (known as the command attributes) which are often altered.
         # These are the primary pieces which when changed produce new results
@@ -64,15 +67,13 @@ class PyPort:
         self._constraints_instructions,) = self._get_initial_command_attributes()
 
         # universal attributes
-        self._universal_bounds:   tuple
-        self._universal_constraints: dict
-        self._log_ts_df: DataFrame
-
-
-        # rolling "temporary" attributes
+        self._universal_bounds:         tuple
+        self._universal_constraints:    dict
+        self._log_ts_df:                DataFrame
         self._lookback_context:         dict
         self._timeline:                 list
         self._portfolios:               list
+        self._cumulative_returns:       ndarray
 
 
     # TODO: add meaningful repr and str support. Perhaps use pandas to get pleasent dataframes
@@ -97,6 +98,20 @@ class PyPort:
     def _get_initial_command_attributes(self):
         "Should only run once. Changes to command attributes are handled elsewhere"
         return _get_command_attributes(self._initial_universe_instructions)
+
+    def _apply_drophow(self):
+        self.ts_df.dropna(axis='columns', how=self.dropna_how, inplace=True)
+
+
+
+    # TODO: implement method
+    def _check_asset_declared_consistency(self):
+        """Handles what to do if the assets (the ticker symbols) do not match
+        the assets listed on the timeseries dataframe.
+        """
+        pass
+
+
 
 
     # Below is the cleanest manner to apply attributes however attributes are runtime dependent. 
@@ -376,11 +391,16 @@ class PyPort:
             strategy_portfolios.append(Portfolio(portfolio_timeline_name, self, timeline_dates))
         return strategy_portfolios
 
+    @property
+    def interval_returns(self):
+        try:
+            return self._cumulative_returns
+        except AttributeError:
+            self._cumulative_returns = self._calc_interval_returns()
+            return self._cumulative_returns
 
-    def print_portfolio_information(self):
+    def _calc_interval_returns(self):
+        cumulative_returns = numpy.array([1])
         for portfolio in self.portfolios:
-            print(portfolio)
-
-
-    
-
+            cumulative_returns = numpy.append(cumulative_returns, portfolio.tracked_returns)
+        return cumulative_returns

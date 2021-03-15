@@ -169,7 +169,7 @@ class Portfolio:
         try:
             return self._allocation_array
         except AttributeError:
-            self._allocation_array = self.pyport.get_allocation(self.optimization_result)
+            self._allocation_array = self.pyport.get_allocation_array(self.optimization_result)
             return self._allocation_array
 
     @allocation_array.setter
@@ -182,7 +182,7 @@ class Portfolio:
         try:
             return self._asset_allocation
         except AttributeError:
-            self._asset_allocation = self._humanize_asset_allocation
+            self._asset_allocation = self._humanize_asset_allocation()
             return self._asset_allocation
 
 
@@ -197,7 +197,7 @@ class Portfolio:
         try:
             return self._tracked_returns
         except AttributeError:
-            self._tracked_returns = self.track_returns
+            self._tracked_returns = self.track_returns()
             return self._tracked_returns
 
 
