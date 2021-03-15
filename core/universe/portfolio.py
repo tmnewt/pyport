@@ -70,17 +70,17 @@ class Portfolio:
             try:
                 return self._prices_during_lifetime
             except AttributeError:
-                self._prices_during_lifetime = self.universe.slice_ts_df(self.start_date, self.end_date)
+                self._prices_during_lifetime = self.universe.uni_slice_ts_df(self.start_date, self.end_date)
                 return self._prices_during_lifetime
         else:
-            return self.universe.slice_ts_df(self.start_date, self.end_date)
+            return self.universe.uni_slice_ts_df(self.start_date, self.end_date)
 
     @property
     def log_returns(self) -> DataFrame:
         try:
             return self._log_returns
         except AttributeError:
-            self._log_returns = self.universe.slice_log_ts_df(self.lookback_start, self.lookback_end)
+            self._log_returns = self.universe.uni_slice_log_ts_df(self.lookback_start, self.lookback_end)
             return self._log_returns
 
     @property
@@ -94,3 +94,6 @@ class Portfolio:
     @property
     def mean_returns(self) -> Series:
         pass
+
+
+    

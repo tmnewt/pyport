@@ -7,12 +7,12 @@ from scipy.optimize import OptimizeResult
 from . import defaults
 
 
-def calc_log_returns(ts_df:DataFrame) -> DataFrame:
+def _calc_log_returns(ts_df:DataFrame) -> DataFrame:
     "Returns log returns of time series dataframe"
     return numpy.log(ts_df / ts_df.shift(1))
 
 
-def slice_ts_df(ts_df:DataFrame, start:Timestamp, end:Timestamp) -> DataFrame:
+def _slice_ts_df(ts_df:DataFrame, start:Timestamp, end:Timestamp) -> DataFrame:
     """Uses `pandas` `.loc` property to return slice of times series data.\n
     Works for both log-returns and non log-returns time series.\n
     Cannot be used to slice for discreate timeseries..."""
@@ -21,33 +21,33 @@ def slice_ts_df(ts_df:DataFrame, start:Timestamp, end:Timestamp) -> DataFrame:
     return ts_df.loc[start:end]
 
 
-def calc_expected_returns_on_slice(ts_df:DataFrame, frequency:int=252) -> Series:
+def _calc_expected_returns_on_slice(ts_df:DataFrame, frequency:int=252) -> Series:
     return ts_df.mean()*frequency
 
 
-def calc_covariance_matrix(ts_df:DataFrame, frequency:int=252) -> DataFrame:
+def _calc_covariance_matrix(ts_df:DataFrame, frequency:int=252) -> DataFrame:
     return ts_df.cov() * frequency
 
 
-def calc_correlation_matrix(ts_df:DataFrame) -> DataFrame:
+def _calc_correlation_matrix(ts_df:DataFrame) -> DataFrame:
     return ts_df.corr()
 
 
-def calc_expected_portfolio_return(weight_arr:ndarray, mean_returns:Series) -> float:
+def _calc_expected_portfolio_return(weight_arr:ndarray, mean_returns:Series) -> float:
     return numpy.sum(mean_returns * weight_arr)
 
 
-def calc_expected_portfolio_volatility(weight_arr:ndarray, covariance_matrix:DataFrame) -> float:
+def _calc_expected_portfolio_volatility(weight_arr:ndarray, covariance_matrix:DataFrame) -> float:
     return numpy.sqrt(numpy.dot(weight_arr.T, numpy.dot(covariance_matrix, weight_arr)))
 
 
-def calc_sharpe_ratio(expected_portfolio_return:float, portfolio_volatility:float) -> float:
+def _calc_sharpe_ratio(expected_portfolio_return:float, portfolio_volatility:float) -> float:
     return expected_portfolio_return / portfolio_volatility
 
 
 def portfolio_statics(weights_arr:ndarray, mean_returns:Series, covariance_matrix:DataFrame) -> list:
-    portfolio_return = calc_expected_portfolio_return(weights_arr, mean_returns)
-    portfolio_volatility = calc_expected_portfolio_volatility(weights_arr, covariance_matrix)
+    portfolio_return = _calc_expected_portfolio_return(weights_arr, mean_returns)
+    portfolio_volatility = _calc_expected_portfolio_volatility(weights_arr, covariance_matrix)
     sharpe_ratio = -1*(portfolio_return / portfolio_volatility)
     return [portfolio_return, portfolio_volatility, sharpe_ratio]
 
@@ -122,7 +122,7 @@ def efficient_frontier(num_assets, mean_returns, covariance_matrix, bounds):
     weight_guess = build_weight_guess(num_assets)
 
     for target in target_frontier_returns:
-        cons = ({'type': 'eq', 'fun': lambda x, target = target : calc_expected_portfolio_return(x, mean_returns) - target},
+        cons = ({'type': 'eq', 'fun': lambda x, target = target : _calc_expected_portfolio_return(x, mean_returns) - target},
                 {'type': 'eq', 'fun': lambda x: numpy.sum(x)-1})
         frontier_volatility = optimize.minimize(
                     fun         = _minimize_volatility,
@@ -163,6 +163,6 @@ def _generate_random_allocation_weights(num_assets):
     return weights
 
 def _minimize_volatility(weights, covariance_matrix):
-    return calc_expected_portfolio_volatility(weights, covariance_matrix)
+    return _calc_expected_portfolio_volatility(weights, covariance_matrix)
 
 

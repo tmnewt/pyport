@@ -6,8 +6,8 @@ from pandas import Timestamp
 
 from ..dataloader import load_universe as dataloader_universe
 from ..actions import (
-    calc_log_returns,
-    slice_ts_df
+    _calc_log_returns,
+    _slice_ts_df
     )
 from .attribute_gets import (
     _get_universe_attributes,
@@ -236,7 +236,7 @@ class PyPort:
             return self._log_ts_df
         except AttributeError:
             # log_ts_df does not exist yet. Build it.
-            self._log_ts_df = calc_log_returns(self.ts_df)
+            self._log_ts_df = _calc_log_returns(self.ts_df)
             return self._log_ts_df
 
     @property
@@ -297,13 +297,16 @@ class PyPort:
 
         return timelines
 
+    @staticmethod
+    def slice_ts_df(ts_df:DataFrame, start:Timestamp, end:Timestamp) -> DataFrame:
+        return _slice_ts_df(ts_df, start, end)
 
-    def slice_ts_df(self, start:Timestamp, end:Timestamp) -> DataFrame:
-        return slice_ts_df(self.ts_df, start, end)
+    def uni_slice_ts_df(self, start:Timestamp, end:Timestamp) -> DataFrame:
+        return self.slice_ts_df(self.ts_df, start, end)
 
-    def slice_log_ts_df(self, start:Timestamp, end:Timestamp) -> DataFrame:
-        return slice_ts_df(self.log_ts_df, start, end)
-
+    def uni_slice_log_ts_df(self, start:Timestamp, end:Timestamp) -> DataFrame:
+        return self.slice_ts_df(self.log_ts_df, start, end)
+    
     def run_strategy(self):
         pass
 
