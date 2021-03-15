@@ -1,6 +1,6 @@
 import numpy
 from numpy import ndarray
-from pandas import DataFrame, Series
+from pandas import DataFrame, Series, Timestamp
 from scipy import optimize
 from scipy.optimize import OptimizeResult
 
@@ -12,10 +12,12 @@ def calc_log_returns(ts_df:DataFrame) -> DataFrame:
     return numpy.log(ts_df / ts_df.shift(1))
 
 
-def slice_ts_df(ts_df:DataFrame, start, end) -> DataFrame:
+def slice_ts_df(ts_df:DataFrame, start:Timestamp, end:Timestamp) -> DataFrame:
     """Uses `pandas` `.loc` property to return slice of times series data.\n
     Works for both log-returns and non log-returns time series.\n
     Cannot be used to slice for discreate timeseries..."""
+    start   = Timestamp(start)
+    end     = Timestamp(end)
     return ts_df.loc[start:end]
 
 

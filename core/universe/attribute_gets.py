@@ -1,10 +1,12 @@
+from pandas import Timestamp
+
 def _get_universe_attributes(instructions:dict) -> list:
     universe_section = instructions['universe']
 
     return [
         universe_section['related_dataset'],
-        universe_section['analysis_start_date'],
-        universe_section['analysis_end_date'],
+        Timestamp(universe_section['analysis_start_date']),
+        Timestamp(universe_section['analysis_end_date']),
         universe_section['interval'],
         universe_section['dropna_how'],
         universe_section['assets'],
@@ -14,7 +16,7 @@ def _get_command_attributes(instructions:dict) -> dict:
     commands = instructions['commands']
 
     return [
-        commands['strategy_start'],
+        Timestamp(commands['strategy_start']),
         commands['lookback_length'],
         commands['lookback_time_quantifier'],
         commands['rebalance'],
@@ -25,4 +27,13 @@ def _get_command_attributes(instructions:dict) -> dict:
         commands['long_ceiling'],
         commands['bounds'],
         commands['constraints'],
+    ]
+
+def _get_portfolio_timeline_attributes(timeline:dict) -> list:
+    
+    return [
+        Timestamp(timeline['start_date']),
+        Timestamp(timeline['end_date']),
+        Timestamp(timeline['lookback_start']),
+        Timestamp(timeline['lookback_end']),
     ]

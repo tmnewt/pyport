@@ -1,11 +1,21 @@
+from datetime import datetime
+from dateutil.relativedelta import relativedelta
+
 from pandas import DataFrame
+from pandas import Timestamp
 
 from ..dataloader import load_universe as dataloader_universe
+from ..actions import (
+    calc_log_returns,
+    slice_ts_df
+    )
 from .attribute_gets import (
     _get_universe_attributes,
     _get_command_attributes,
     )
+from ..utils import datecalc
 
+# TODO: extract new "rebalance_frequency_strictness" 
 class PyPort:
     def __init__(self, port_name:str):
         self._port_name = port_name
@@ -40,19 +50,31 @@ class PyPort:
         self._bounds,
         self._constraints,) = self._get_initial_command_attributes()
 
+        # frequently reused attributes
+        self._log_ts_df: DataFrame
+
+
+        # rolling "temporary" attributes
+        self._temp_datatime_start:      str
+        self._temp_datatime_end:        str
+        self._temp_log_returns_slice:   DataFrame
+        self._temp_cov_frame:           DataFrame
+        self._lookback_context:         dict
+        self._timeline:        list
+
 
 
     @staticmethod
     def _load_initial_universe(name):
-        "Should only be run once. Changes to universe are handled elsewhere"
+        "Should only run once. Changes to universe are handled elsewhere"
         return dataloader_universe(name)
 
     def _get_initial_universe_attributes(self):
-        "Should only be run once. Changes to universe attributes are handled elsewhere"
+        "Should only run once. Changes to universe attributes are handled elsewhere"
         return _get_universe_attributes(self._initial_universe_instructions)
 
     def _get_initial_command_attributes(self):
-        "Should only be run once. Changes to command attributes are handled elsewhere"
+        "Should only run once. Changes to command attributes are handled elsewhere"
         return _get_command_attributes(self._initial_universe_instructions)
 
 
@@ -97,20 +119,20 @@ class PyPort:
         return self._initial_description
 
     @property
-    def universe_start(self):
+    def universe_start(self) -> Timestamp:
         return self._analysis_start_date
 
     @universe_start.setter
-    def universe_start(self, value):
-        self._analysis_start_date = value
+    def universe_start(self, value) -> Timestamp:
+        self._analysis_start_date = Timestamp(value)
 
     @property
-    def universe_end(self):
+    def universe_end(self) -> Timestamp:
         return self._analysis_end_date
 
     @universe_end.setter
-    def universe_end(self, value):
-        self._analysis_end_date = value
+    def universe_end(self, value) -> Timestamp:
+        self._analysis_end_date = Timestamp(value)
 
     @property
     def interval(self) -> str:
@@ -125,7 +147,7 @@ class PyPort:
         return self._assets
 
     @property
-    def strategy_start(self):
+    def strategy_start(self) -> Timestamp:
         return self._strategy_start
 
     @strategy_start.setter
@@ -133,7 +155,7 @@ class PyPort:
         self._strategy_start = value
 
     @property
-    def strategy_end(self):
+    def strategy_end(self) -> Timestamp:
         return self._analysis_end_date
 
     @property
@@ -207,3 +229,88 @@ class PyPort:
     @property
     def constraints(self) -> str:
         return self._constraints
+
+    @property
+    def log_ts_df(self) -> DataFrame:
+        try:
+            return self._log_ts_df
+        except AttributeError:
+            # log_ts_df does not exist yet. Build it.
+            self._log_ts_df = calc_log_returns(self.ts_df)
+            return self._log_ts_df
+
+    @property
+    def lookback_context(self):
+        try:
+            return self._lookback_context
+        except AttributeError:
+            self._lookback_context = {self.lookback_length_quantifier: self.lookback_length}
+            return self._lookback_context
+
+    #@property
+    #def temp_log_returns_slice(self):
+    #    try:
+    #        return self._temp_log_returns_slice
+    #    except AttributeError:
+    #        self._temp_log_returns_slice = self.log_ts_df[]
+#
+    #@property
+    #def last_cov_frame(self):
+    #    try:
+    #        return self._recent_cov_frame
+    #    except AttributeError:
+    #        return
+#
+    #@property
+    #def portfolios(self):
+    #    # return list of portfolios built during the universe run
+    #    pass
+
+    @property
+    def timeline(self):
+        try:
+            return self._timeline
+        except AttributeError:
+            self._timeline = self._build_timeline()
+            return self._timeline
+
+    def _build_timeline(self) -> dict:
+        timelines = {}
+
+        start_date = self.strategy_start
+        now = Timestamp(datetime.today())
+        count=1
+        while start_date < now:
+            count_number = f'{count:04}'
+            timelines[f'portfolio_{count_number}'] = {}
+            timelines[f'portfolio_{count_number}']['start_date'] = start_date
+
+            end_date = datecalc.timeframe_end(start_date, self.rebalance_frequency)
+            timelines[f'portfolio_{count_number}']['end_date'] = end_date
+
+            lookback_end = start_date - relativedelta(days=1)
+            timelines[f'portfolio_{count_number}']['lookback_start'] = datecalc.lookback(lookback_end, **self.lookback_context)
+            timelines[f'portfolio_{count_number}']['lookback_end'] = lookback_end
+            
+            start_date = end_date + relativedelta(days=1)
+            count += 1
+
+        return timelines
+
+
+    def slice_ts_df(self, start:Timestamp, end:Timestamp) -> DataFrame:
+        return slice_ts_df(self.ts_df, start, end)
+
+    def slice_log_ts_df(self, start:Timestamp, end:Timestamp) -> DataFrame:
+        return slice_ts_df(self.log_ts_df, start, end)
+
+    def run_strategy(self):
+        pass
+
+
+
+
+
+
+
+    
