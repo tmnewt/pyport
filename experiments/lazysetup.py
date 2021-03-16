@@ -7,7 +7,7 @@ from core.actions import (
     set_optimization_constraints , _guess_weights , portfolio_statics,
     efficient_frontier   , random_portfolio_draws, _get_allocation)
 
-from core.visualizations import plot_pyport_basic
+from core.visualizations import show_portfolio_efficient_frontier
 
 
 def lazy_demo(verbose:bool=False):
@@ -37,6 +37,6 @@ def lazy_demo(verbose:bool=False):
     frontier_info    = efficient_frontier(num_assets, mean_returns, covariance_matrix, bounds)
     random_draw_info = random_portfolio_draws(num_assets, mean_returns, covariance_matrix)
     
-    plot_pyport_basic(solution_info, frontier_info, random_draw_info)
+    show_portfolio_efficient_frontier(solution_info, frontier_info, random_draw_info)
     #return allocation, opt_obj
 

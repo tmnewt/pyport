@@ -5,6 +5,7 @@ import numpy
 from numpy import ndarray
 from pandas import DataFrame, Timestamp, Series
 from scipy.optimize import OptimizeResult
+import matplotlib.pyplot as plt
 
 
 from ..dataloader import load_universe as dataloader_universe
@@ -73,16 +74,19 @@ class PyPort:
         self._lookback_context:         dict
         self._timeline:                 list
         self._portfolios:               list
+        self._interval_dates:           list
+        self._interval_returns:         ndarray
         self._cumulative_returns:       ndarray
 
 
+
     # TODO: add meaningful repr and str support. Perhaps use pandas to get pleasent dataframes
-    def __repr__(self):
-        for portfolio in self.portfolios:
-            print(portfolio)
-    def __str__(self):
-        for portfolio in self.portfolios:
-            print(portfolio)
+    #def __repr__(self):
+    #    for portfolio in self.portfolios:
+    #        print(portfolio)
+    #def __str__(self):
+    #    for portfolio in self.portfolios:
+    #        print(portfolio)
 
 
 
@@ -105,11 +109,11 @@ class PyPort:
 
 
     # TODO: implement method
-    def _check_asset_declared_consistency(self):
-        """Handles what to do if the assets (the ticker symbols) do not match
-        the assets listed on the timeseries dataframe.
-        """
-        pass
+    #def _check_asset_declared_consistency(self):
+    #    """Handles what to do if the assets (the ticker symbols) do not match
+    #    the assets listed on the timeseries dataframe.
+    #    """
+    #    pass
 
 
 
@@ -394,13 +398,55 @@ class PyPort:
     @property
     def interval_returns(self):
         try:
-            return self._cumulative_returns
+            return self._interval_returns
         except AttributeError:
-            self._cumulative_returns = self._calc_interval_returns()
-            return self._cumulative_returns
+            self._interval_returns = self._calc_interval_returns()
+            return self._interval_returns
 
     def _calc_interval_returns(self):
-        cumulative_returns = numpy.array([1])
+        interval_returns = numpy.array([1])
         for portfolio in self.portfolios:
-            cumulative_returns = numpy.append(cumulative_returns, portfolio.tracked_returns)
-        return cumulative_returns
+            interval_returns = numpy.append(interval_returns, portfolio.interval_returns)
+        return interval_returns
+    
+    
+    @property
+    def interval_dates(self):
+        try:
+            return self._interval_dates
+        except AttributeError:
+            self._interval_dates = self._calc_interval_dates()
+            return self._interval_dates
+
+
+    def _calc_interval_dates(self):
+        for i, portfolio in enumerate(self.portfolios):
+            if i == 0:
+                interval_dates = portfolio.interval_dates
+                # need 1 additional date to reach full interval
+                day_before = interval_dates[0] - numpy.timedelta64(1, "D")
+                interval_dates = numpy.append(day_before, interval_dates)
+            else:
+                interval_dates = numpy.append(interval_dates, portfolio.interval_dates)
+        return interval_dates
+
+
+
+    @property
+    def cumulative_returns(self) -> Series:
+        try:
+            return self._cumulative_returns
+        except AttributeError:
+            #self._cumulative_returns = self.interval_returns.cumprod()
+            self._cumulative_returns = Series(self.interval_returns.cumprod(), index=self.interval_dates)
+            
+            return self._cumulative_returns
+
+    
+
+    def show_cumulative_returns(self):
+        plt.figure('cumulative_figure')
+        plt.plot(self.cumulative_returns)
+        plt.ylabel('Cumulative Returns')
+        plt.xlabel('Timeline')
+        plt.show(block=True)

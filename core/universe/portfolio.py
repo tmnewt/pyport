@@ -35,7 +35,8 @@ class Portfolio:
         self._optimization_result:      OptimizeResult
         self._allocation_array:         ndarray
         self._asset_allocation:         list
-        self._tracked_returns:          ndarray
+        self._interval_returns:         ndarray
+        self._interval_dates:           ndarray
 
 
     def __repr__(self):
@@ -192,25 +193,36 @@ class Portfolio:
         
         return list(zip(self.assets, self.allocation_array))
 
+
+    # TODO: consider refactoring interval_returns and interval_dates so they are not dependent on each other.
     @property
-    def tracked_returns(self) -> ndarray:
+    def interval_returns(self) -> ndarray:
         try:
-            return self._tracked_returns
+            return self._interval_returns
         except AttributeError:
-            self._tracked_returns = self.track_returns()
-            return self._tracked_returns
+            self._calc_interval_attributes()
+            return self._interval_returns
+
+    @property
+    def interval_dates(self) -> ndarray:
+        try:
+            return self._interval_dates
+        except AttributeError:
+            self._calc_interval_attributes()
+            return self._interval_dates
 
 
-    def track_returns(self) -> ndarray:
+    def _calc_interval_attributes(self) -> ndarray:
         applicable_log_returns_slice = self.pyport.uni_slice_log_ts_df(self.start_date, self.end_date)
         if len(self.allocation_array) != len(applicable_log_returns_slice.columns.values):
             raise KeyError(f'Unbalanced number of assets ({len(self.allocation_array)}) to number of assets in universe ({len(applicable_log_returns_slice.columns.values)}). These numbers must match')
         # TODO: consider checking for asset to asset alignment.
+        self._interval_dates = applicable_log_returns_slice.index.values
 
         return_deltas = []
-        for date in applicable_log_returns_slice.index.values:
+        for date in self.interval_dates:
             return_deltas.append(dot(applicable_log_returns_slice.loc[date], self.allocation_array))
-        
+
         return_deltas = array(return_deltas)
         return_deltas[isnan(return_deltas)]=0
-        return return_deltas+1
+        self._interval_returns = return_deltas+1
