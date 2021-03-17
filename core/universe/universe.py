@@ -35,20 +35,20 @@ class PyPort:
         self._pyport_name = pyport_name
 
         # preserves the initial information. This becomes useful later
-        self._initial_universe_instructions, self._ts_df = self._load_initial_universe(self._pyport_name)
-        self._initial_universe_attributes = self._initial_universe_instructions['universe']
-        self._initial_command_attributes  = self._initial_universe_instructions['commands']
-        self._initial_description         = self._initial_universe_instructions['description']
+        self._instructions, self._ts_df = self._load_initial_universe(self._pyport_name)
+        self._universe_details = self._instructions['universe']
+        self._command_details  = self._instructions['commands']
+        self._description         = self._instructions['description']
 
 
         # Instance Attributes (known as the universe attributes) which may be altered, but to a lesser extent of command attributes
         # Universe's start and ends dates are typical examples of attributes which may change.
         (self._related_dataset,
-        self._analysis_start_date,
-        self._analysis_end_date,
-        self._interval,
+        self._universe_start,
+        self._universe_end,
+        self._data_interval,
         self._dropna_how,
-        self._universe_assets) = self._get_initial_universe_attributes()
+        self._declared_assets) = self._get_initial_universe_attributes()
         #TODO: fix discrepency between declared assets and actual.
 
         self._apply_drophow()
@@ -66,8 +66,9 @@ class PyPort:
         self._long_ceiling) = self._get_initial_command_attributes()
 
         # universal attributes
-        self._bounds:         tuple
-        self._constraints:    dict
+        self._universe_assets:          list
+        self._bounds:                   tuple
+        self._constraints:              dict
         self._log_ts_df:                DataFrame
         self._lookback_context:         dict
         self._timeline:                 list
@@ -95,11 +96,11 @@ class PyPort:
 
     def _get_initial_universe_attributes(self):
         "Should only run once. Changes to universe attributes are handled elsewhere"
-        return _get_universe_attributes(self._initial_universe_instructions)
+        return _get_universe_attributes(self._instructions)
 
     def _get_initial_command_attributes(self):
         "Should only run once. Changes to command attributes are handled elsewhere"
-        return _get_command_attributes(self._initial_universe_instructions)
+        return _get_command_attributes(self._instructions)
 
     def _apply_drophow(self):
         self.ts_df.dropna(axis='columns', how=self.dropna_how, inplace=True)
@@ -107,11 +108,11 @@ class PyPort:
 
 
     # TODO: implement method
-    #def _check_asset_declared_consistency(self):
-    #    """Handles what to do if the assets (the ticker symbols) do not match
-    #    the assets listed on the timeseries dataframe.
-    #    """
-    #    pass
+    def _check_asset_declared_consistency(self):
+        """Handles what to do if the assets (the ticker symbols) do not match
+        the assets listed on the timeseries dataframe.
+        """
+        pass
 
 
 
@@ -123,52 +124,69 @@ class PyPort:
         return self._pyport_name
 
     @property
-    def initial_universe_instructions(self):
-        return self._initial_universe_instructions
+    def instructions(self):
+        return self._instructions
 
     @property
     def ts_df(self) -> DataFrame:
         return self._ts_df
 
     @property
-    def initial_universe_attributes(self):
-        return self._initial_universe_attributes
+    def universe_details(self):
+        return self._universe_details
 
     @property
-    def initial_command_attributes(self):
-        return self._initial_command_attributes
+    def command_details(self):
+        return self._command_details
 
     @property
-    def initial_description(self):
-        return self._initial_description
+    def description(self):
+        return self._description
 
     @property
     def universe_start(self) -> Timestamp:
-        return self._analysis_start_date
+        return self._universe_start
 
     @universe_start.setter
-    def universe_start(self, value) -> Timestamp:
-        self._analysis_start_date = Timestamp(value)
+    def universe_start(self, value):
+        self._universe_start = Timestamp(value)
 
     @property
     def universe_end(self) -> Timestamp:
-        return self._analysis_end_date
+        return self._universe_end
 
     @universe_end.setter
-    def universe_end(self, value) -> Timestamp:
-        self._analysis_end_date = Timestamp(value)
+    def universe_end(self, value):
+        self._universe_end = Timestamp(value)
 
     @property
-    def interval(self) -> str:
-        return self._interval
+    def data_interval(self) -> str:
+        return self._data_interval
 
     @property
     def dropna_how(self) -> str:
         return self._dropna_how
 
     @property
-    def universe_assets(self) -> list:
-        return self._universe_assets
+    def declared_assets(self) -> list:
+        return self._declared_assets
+
+    @declared_assets.setter
+    def declared_assets(self, value):
+        self._declared_assets = value
+
+    @property
+    def universe_assets(self):
+        try:
+            return self._universe_assets
+        except AttributeError:
+            self._universe_assets = self._update_universe_assets()
+            return self._universe_assets
+
+
+    def _update_universe_assets(self):
+        return self.ts_df.columns.values
+
 
     @property
     def strategy_start(self) -> Timestamp:
@@ -176,11 +194,15 @@ class PyPort:
 
     @strategy_start.setter
     def strategy_start(self, value):
-        self._strategy_start = value
+        self._strategy_start = Timestamp(value)
 
     @property
     def strategy_end(self) -> Timestamp:
-        return self._analysis_end_date
+        return self._universe_end
+
+    @strategy_end.setter
+    def strategy_end(self, value):
+        self._universe_end = Timestamp(value)
 
     @property
     def lookback_length(self) -> int:
@@ -204,6 +226,8 @@ class PyPort:
 
     @can_rebalance.setter
     def can_rebalance(self, value):
+        if not isinstance(value, bool):
+            raise TypeError(f'value "{value}" is not a boolean.')
         self._rebalance = value
 
     @property
@@ -254,7 +278,7 @@ class PyPort:
         try:
             return self._bounds
         except AttributeError:
-            self._bounds = set_allocation_bounds(len(self.universe_assets), self.long_floor, self.long_ceiling)
+            self._bounds = set_allocation_bounds(len(self.declared_assets), self.long_floor, self.long_ceiling)
             return self._bounds
 
     @bounds.setter
