@@ -63,13 +63,11 @@ class PyPort:
         self._shorting,
         self._short_limit,
         self._long_floor,
-        self._long_ceiling,
-        self._bounds_instructions,
-        self._constraints_instructions,) = self._get_initial_command_attributes()
+        self._long_ceiling) = self._get_initial_command_attributes()
 
         # universal attributes
-        self._universal_bounds:         tuple
-        self._universal_constraints:    dict
+        self._bounds:         tuple
+        self._constraints:    dict
         self._log_ts_df:                DataFrame
         self._lookback_context:         dict
         self._timeline:                 list
@@ -118,22 +116,8 @@ class PyPort:
 
 
 
-    # Below is the cleanest manner to apply attributes however attributes are runtime dependent. 
-    # This can be dangerous and unwieldy. Also creates an issue when linting.
-    #def apply_universe_attributes_setattr(self, instructions):
-    #    self._apply_universe_attributes_setattr(instructions)
-    #def _apply_universe_attributes_setattr(self, instructions):
-    #    universe_section = instructions['universe']
-    #    for key, value in universe_section.items():
-    #        setattr(self, key, value)
-    # You could repeat the same process for command attributes, but remember, this is runtime dependent.
 
-
-
-
-
-    ## PROPERTIES AND SETTERS
-
+    # TODO: change as many of these properties to follow the lazy evaluation design
     @property
     def name(self):
         return self._pyport_name
@@ -230,6 +214,8 @@ class PyPort:
     def rebalance_frequency(self, value):
         self._rebalance_frequency = value
 
+
+    # TODO: resolve how shorting is implemented. Is a negative long position a short? It should be.
     @property
     def can_short(self) -> bool:
         return self._shorting
@@ -238,6 +224,7 @@ class PyPort:
     def can_short(self, value):
         self._shorting = value
 
+    # TODO: see prior todo
     @property
     def short_limit(self) -> float:
         return self._short_limit
@@ -263,30 +250,28 @@ class PyPort:
         self._long_ceiling = value
 
     @property
-    def universal_bounds(self) -> str:
-        # TODO: properly hookup _bounds_instructions
+    def bounds(self) -> str:
         try:
-            return self._universal_bounds
+            return self._bounds
         except AttributeError:
-            self._universal_bounds = set_allocation_bounds(len(self.universe_assets), self.long_floor, self.long_ceiling)
-            return self._universal_bounds
+            self._bounds = set_allocation_bounds(len(self.universe_assets), self.long_floor, self.long_ceiling)
+            return self._bounds
 
-    @universal_bounds.setter
-    def universal_bounds(self, value):
-        self._universal_bounds = value
+    @bounds.setter
+    def bounds(self, value):
+        self._bounds = value
     
     @property
-    def universal_constraints(self) -> str:
-        # TODO: properly hookup _constraints_instructions
+    def constraints(self) -> str:
         try:
-            return self._universal_constraints
+            return self._constraints
         except AttributeError:
-            self._universal_constraints = optimization_constraints
-            return self._universal_constraints
+            self._constraints = optimization_constraints
+            return self._constraints
 
-    @universal_constraints.setter
-    def universal_constraints(self, value):
-        self._universal_constraints = value
+    @constraints.setter
+    def constraints(self, value):
+        self._constraints = value
 
     @property
     def log_ts_df(self) -> DataFrame:

@@ -130,7 +130,7 @@ class Portfolio:
         try:
             return self._allocation_bounds
         except AttributeError:
-            self._allocation_bounds = self.pyport.universal_bounds
+            self._allocation_bounds = self.pyport.bounds
             return self._allocation_bounds
 
     @allocation_bounds.setter
@@ -142,7 +142,7 @@ class Portfolio:
         try:
             return self._optimization_constraints
         except AttributeError:
-            self._optimization_constraints = self.pyport.universal_constraints
+            self._optimization_constraints = self.pyport.constraints
             return self._optimization_constraints
 
     @optimization_constraints.setter

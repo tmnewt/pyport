@@ -25,8 +25,6 @@ def _get_command_attributes(instructions:dict) -> dict:
         commands['short_limit'],
         commands['long_floor'],
         commands['long_ceiling'],
-        commands['bounds'],
-        commands['constraints'],
     ]
 
 def _get_portfolio_timeline_attributes(timeline:dict) -> list:
