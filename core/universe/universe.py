@@ -8,7 +8,7 @@ from scipy.optimize import OptimizeResult
 import matplotlib.pyplot as plt
 
 
-from ..dataloader import load_universe as dataloader_universe
+from ..dataloader import load_universe as dataloader_universe, load_instructions
 from ..actions import (
     _calc_log_returns,
     _slice_ts_df,
@@ -34,9 +34,9 @@ class PyPort:
     def __init__(self, pyport_name:str):
         self._pyport_name = pyport_name
         self._instructions, self._ts_df = self._load_initial_universe(self._pyport_name) #TODO get ride of preloading dataframe to make as lazy as possible
-        self._universe_details = self._instructions['universe']
-        self._command_details  = self._instructions['commands']
-        self._description         = self._instructions['description']
+        self._universe_details:         dict
+        self._command_details:          dict
+        self._description:              str
 
 
         # universe category attributes
@@ -102,7 +102,6 @@ class PyPort:
         self.ts_df.dropna(axis='columns', how=self.dropna_how, inplace=True)
 
 
-
     # TODO: implement method
     def _check_asset_declared_consistency(self):
         """Handles what to do if the assets (the ticker symbols) do not match
@@ -114,7 +113,7 @@ class PyPort:
 
 
 
-    # TODO: change as many of these properties to follow the lazy evaluation design
+
     @property
     def name(self):
         return self._pyport_name
@@ -125,7 +124,11 @@ class PyPort:
 
     @property
     def instructions(self):
-        return self._instructions
+        try:
+            return self._instructions
+        except AttributeError:
+            self._instructions = load_instructions(self.name)
+            return self._instructions
 
     @property
     def ts_df(self) -> DataFrame:
@@ -133,15 +136,26 @@ class PyPort:
 
     @property
     def universe_details(self):
-        return self._universe_details
+        try:
+            return self._universe_details
+        except AttributeError:
+            self._universe_details = self.instructions['universe']
+            return self._universe_details
 
     @property
     def command_details(self):
-        return self._command_details
+        try:
+            return self._command_details
+        except AttributeError:
+            self._command_details = self.instructions['commands']
+            return self._command_details
 
     @property
     def description(self):
-        return self._description
+        try:
+            return self._description
+        except AttributeError:
+            self._description = self.instructions['description']
 
     @property
     def related_dataset(self):

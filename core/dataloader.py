@@ -1,4 +1,5 @@
-# February 22nd 2021.
+
+# TODO: clean this up
 
 from pathlib import Path
 import json
@@ -7,7 +8,7 @@ import pandas_datareader as pdr
 from pandas import DataFrame
 
 from .settings import NAMING_DISCREPENCY
-from .storage_setup import DATA_PATH, UNIVERSES_PATH
+from .storage_setup import DATA_PATH, PYPORTS_PATH
 
 
 def fetch_data(assets:list, analysis_start_date:str, analysis_end_date:str,
@@ -87,6 +88,7 @@ def _load_instruction(instructions_file:Path) -> dict:
         raise_error_with_info(FileNotFoundError, instructions_file, "Some form of instructions file is needed. Cannot continue without instructions.")
     return instructions_dict
 
+# Deprecated
 def loader(data_file_path:Path, instructions_file:Path, dropna_how:str='any') -> DataFrame:
     data_file_path = _cast_path_object(data_file_path)
     instructions_file = _cast_path_object(instructions_file)
@@ -130,7 +132,7 @@ def _read_data(path:Path) -> DataFrame:
 
 
 def load_instructions(name):
-    universe_location = UNIVERSES_PATH/name
+    universe_location = PYPORTS_PATH/name
     universe_location = universe_location.with_suffix('.json')
     
     if not universe_location.exists():
@@ -140,9 +142,35 @@ def load_instructions(name):
     universe_instructions = _load_instruction(universe_location)
     return universe_instructions
 
+#def load_data(related_dataset, fetch_missing_data:bool=True, save_dataframe:bool=True):
+#    dataset_location = DATA_PATH/related_dataset
+#    if not dataset_location.exists():
+#        if dataset_location.suffix == "":
+#            # instructions do not state how data is setup. Provides only a
+#            # name. Check to see if any existing data files match universe name.
+#            raise NotImplementedError('Logic for completing load operation under these conditions does not exist yet.')
+#
+#        elif fetch_missing_data:
+#            print('Downloading missing data. This may take a moment...')
+#            data = fetch_data(**_get_fetch_context(universe_instructions))
+#            if save_dataframe:
+#                if dataset_location.suffix == "":
+#                    print('No file type specified in instructions. Defaulting to ".pkl"')
+#                    dataset_location = dataset_location.with_suffix('.pkl')
+#                print(f'preparing to save data at {dataset_location}')
+#                _save_data(data, dataset_location)
+#        else:
+#            raise_error_with_info(FileNotFoundError, dataset_location,
+#                f'Declared related_dataset: "{related_dataset}" cannot be found and you have opted to not fetch any missing data.')
+#    else:
+#        universe_ts_data = _read_data(dataset_location)
+#
+#    return universe_ts_data
+#
+
 def load_universe(name:str, fetch_missing_data:bool=True, save_dataframe:bool=True):
     # TODO: add universe_update information in returns.
-    universe_location = UNIVERSES_PATH/name
+    universe_location = PYPORTS_PATH/name
     universe_location = universe_location.with_suffix('.json')
     
     if not universe_location.exists():
