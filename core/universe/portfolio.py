@@ -25,7 +25,7 @@ class Portfolio:
         #self._prior_portfolio: Portfolio
         #self._next_portfolio: Portfolio
 
-        self._prices_during_lifetime:   DataFrame
+        self._ts_df:   DataFrame
         self._log_returns:              DataFrame
         self._assets:                   list
         self._mean_returns:             Series
@@ -81,14 +81,14 @@ class Portfolio:
 
 
     @property
-    def prices_during_lifetime(self) -> DataFrame:
-        #Storing the slice here is wasteful
+    def ts_df(self) -> DataFrame:
+        #Storing the slice here is considered wasteful
         if self.store_ts_df:
             try:
-                return self._prices_during_lifetime
+                return self._ts_df
             except AttributeError:
-                self._prices_during_lifetime = self.pyport.uni_slice_ts_df(self.start_date, self.end_date)
-                return self._prices_during_lifetime
+                self._ts_df = self.pyport.uni_slice_ts_df(self.start_date, self.end_date)
+                return self._ts_df
         else:
             return self.pyport.uni_slice_ts_df(self.start_date, self.end_date)
 

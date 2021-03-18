@@ -8,7 +8,7 @@ from scipy.optimize import OptimizeResult
 import matplotlib.pyplot as plt
 
 
-from ..dataloader import load_universe as dataloader_universe, load_instructions
+from ..dataloader import load_pyport, load_instructions
 from ..actions import (
     _calc_log_returns,
     _slice_ts_df,
@@ -29,19 +29,18 @@ from .portfolio import Portfolio
 from .namings import KEYWORD
 
 
-# TODO: extract new "rebalance_frequency_strictness" 
 # TODO: add doc strings
 class PyPort:
-    def __init__(self, pyport_name:str):
-        self._pyport_name = pyport_name
-        self._instructions, self._ts_df = self._load_initial_universe(self._pyport_name) #TODO get ride of preloading dataframe to make as lazy as possible
-        self._universe_details:         dict
-        self._command_details:          dict
+    def __init__(self, name:str):
+        self._name = name
+        self._instructions, self._ts_df = load_pyport(self.name) #TODO get ride of preloading dataframe to make as lazy as possible
+        self._universe:                 dict
+        self._commands:                 dict
         self._description:              str
 
 
         # universe category attributes
-        self._related_dataset:          str
+        self._dataset_name:             str
         self._universe_start:           Timestamp
         self._universe_end:             Timestamp
         self._data_interval:            str
@@ -52,10 +51,11 @@ class PyPort:
         self._strategy_start:           Timestamp
         self._strategy_end:             Timestamp
         self._lookback_length:          int
-        self._lookback_time_quantifier: str
+        self._lookback_quantifier:      str
         self._rebalance:                bool
         self._rebalance_frequency:      str
-        self._shorting:                 bool
+        self._rebalance_frequency_strictness: str
+        self._can_short:                 bool
         self._short_limit:              float
         self._long_floor:               float
         self._long_ceiling:             float
@@ -85,20 +85,6 @@ class PyPort:
     #        print(portfolio)
 
 
-
-    @staticmethod
-    def _load_initial_universe(name):
-        "Should only run once. Changes to universe are handled elsewhere"
-        return dataloader_universe(name)
-
-    def _get_initial_universe_attributes(self):
-        "Should only run once. Changes to universe attributes are handled elsewhere"
-        return _get_universe_attributes(self._instructions)
-
-    def _get_initial_command_attributes(self):
-        "Should only run once. Changes to command attributes are handled elsewhere"
-        return _get_command_attributes(self._instructions)
-
     def _apply_drophow(self):
         self.ts_df.dropna(axis='columns', how=self.dropna_how, inplace=True)
 
@@ -116,11 +102,11 @@ class PyPort:
 
     @property
     def name(self):
-        return self._pyport_name
+        return self._name
 
     @name.setter
     def name(self, value):
-        self._pyport_name = value
+        self._name = value
 
     @property
     def instructions(self):
@@ -135,20 +121,20 @@ class PyPort:
         return self._ts_df
 
     @property
-    def universe_details(self):
+    def universe(self):
         try:
-            return self._universe_details
+            return self._universe
         except AttributeError:
-            self._universe_details = self.instructions[KEYWORD.UNIVERSE]
-            return self._universe_details
+            self._universe = self.instructions[KEYWORD.UNIVERSE]
+            return self._universe
 
     @property
-    def command_details(self):
+    def commands(self):
         try:
-            return self._command_details
+            return self._commands
         except AttributeError:
-            self._command_details = self.instructions[KEYWORD.COMMANDS]
-            return self._command_details
+            self._commands = self.instructions[KEYWORD.COMMANDS]
+            return self._commands
 
     @property
     def description(self):
@@ -159,24 +145,23 @@ class PyPort:
             return self._description
 
     @property
-    def related_dataset(self):
+    def dataset_name(self):
         try:
-            return self._related_dataset
+            return self._dataset_name
         except AttributeError:
-            self._related_dataset = self.universe_details[KEYWORD.RELATED_DATASET]
-            return self._related_dataset
+            self._dataset_name = self.universe[KEYWORD.DATASET_NAME]
+            return self._dataset_name
 
-    # TODO re-implement related_dataset.setter when safe
-    #@related_dataset.setter
-    #def related_dataset(self, value):
-    #    self._related_dataset = value
+    @dataset_name.setter
+    def dataset_name(self, value):
+        self._dataset_name = value
 
     @property
     def universe_start(self) -> Timestamp:
         try:
             return self._universe_start
         except AttributeError:          # TODO: create naming constants module
-            self._universe_start = Timestamp(self.universe_details[KEYWORD.UNIVERSE_START])
+            self._universe_start = Timestamp(self.universe[KEYWORD.UNIVERSE_START])
             return self._universe_start
 
     @universe_start.setter
@@ -188,7 +173,7 @@ class PyPort:
         try:
             return self._universe_end
         except AttributeError:
-            self._universe_end = Timestamp(self.universe_details[KEYWORD.UNIVERSE_END])
+            self._universe_end = Timestamp(self.universe[KEYWORD.UNIVERSE_END])
             return self._universe_end
 
     @universe_end.setter
@@ -200,7 +185,7 @@ class PyPort:
         try:
             return self._data_interval
         except AttributeError:
-            self._data_interval = self.universe_details[KEYWORD.DATA_INTERVAL]
+            self._data_interval = self.universe[KEYWORD.DATA_INTERVAL]
             return self._data_interval
 
     @property
@@ -208,22 +193,9 @@ class PyPort:
         try:
             return self._dropna_how
         except AttributeError:
-            self._dropna_how = self.universe_details[KEYWORD.DROPNA_HOW]
+            self._dropna_how = self.universe[KEYWORD.DROPNA_HOW]
             return self._dropna_how
 
-
-    @property
-    def declared_assets(self) -> list:
-        try:
-            return self._declared_assets
-        except AttributeError:
-            self._declared_assets = self.universe_details[KEYWORD.ASSETS]
-            return self._declared_assets
-
-    # TODO re-implement declared_assets.setter when safe
-    #@declared_assets.setter
-    #def declared_assets(self, value):
-    #    self._declared_assets = value
 
     @property
     def universe_assets(self):
@@ -236,13 +208,25 @@ class PyPort:
     def _update_universe_assets(self):
         return self.ts_df.columns.values
 
+    # TODO fix declared_assets to not rely on universe assets keyword
+    @property
+    def declared_assets(self) -> list:
+        try:
+            return self._declared_assets
+        except AttributeError:
+            self._declared_assets = self.universe[KEYWORD.UNIVERSE_ASSETS]
+            return self._declared_assets
+    # TODO re-implement declared_assets.setter when safe
+    #@declared_assets.setter
+    #def declared_assets(self, value):
+    #    self._declared_assets = value
 
     @property
     def strategy_start(self) -> Timestamp:
         try:
             return self._strategy_start
         except AttributeError:
-            self._strategy_start = Timestamp(self.command_details[KEYWORD.STRATEGY_START])
+            self._strategy_start = Timestamp(self.commands[KEYWORD.STRATEGY_START])
             return self._strategy_start
 
     @strategy_start.setter
@@ -255,7 +239,7 @@ class PyPort:
             return self._strategy_end
         except AttributeError:
             try:
-                self._strategy_end = self.command_details[KEYWORD.STRATEGY_END]
+                self._strategy_end = self.commands[KEYWORD.STRATEGY_END]
             except KeyError:
                 self._strategy_end = self.universe_end
             return self._strategy_end
@@ -269,7 +253,7 @@ class PyPort:
         try:
             return self._lookback_length
         except AttributeError:
-            self._lookback_length = int(self.command_details[KEYWORD.LOOKBACK_LENGTH])
+            self._lookback_length = int(self.commands[KEYWORD.LOOKBACK_LENGTH])
             return self._lookback_length
 
     @lookback_length.setter
@@ -277,23 +261,23 @@ class PyPort:
         self._lookback_length = value
 
     @property
-    def lookback_length_quantifier(self) -> str:
+    def lookback_quantifier(self) -> str:
         try:
-            return self._lookback_time_quantifier
+            return self._lookback_quantifier
         except AttributeError:
-            self._lookback_time_quantifier = self.command_details[KEYWORD.LOOKBACK_QUANTIFIER]
-            return self._lookback_time_quantifier
+            self._lookback_quantifier = self.commands[KEYWORD.LOOKBACK_QUANTIFIER]
+            return self._lookback_quantifier
 
-    @lookback_length_quantifier.setter
-    def lookback_length_quantifier(self, value):
-        self._lookback_time_quantifier = value
+    @lookback_quantifier.setter
+    def lookback_quantifier(self, value):
+        self._lookback_quantifier = value
 
     @property
     def can_rebalance(self) -> bool:
         try:
             return self._rebalance
         except AttributeError:
-            self._rebalance = self.command_details[KEYWORD.CAN_REBALANCE]
+            self._rebalance = self.commands[KEYWORD.CAN_REBALANCE]
             return self._rebalance
 
     @can_rebalance.setter
@@ -307,7 +291,7 @@ class PyPort:
         try:
             return self._rebalance_frequency
         except AttributeError:
-            self._rebalance_frequency = self.command_details[KEYWORD.REBALANCE_FREQUENCY]
+            self._rebalance_frequency = self.commands[KEYWORD.REBALANCE_FREQUENCY]
             return self._rebalance_frequency
 
     @rebalance_frequency.setter
@@ -315,20 +299,36 @@ class PyPort:
         self._rebalance_frequency = value
 
 
+    @property
+    def rebalance_frequency_strictness(self):
+        try:
+            return self._rebalance_frequency_strictness
+        except AttributeError:
+            try:
+                self._rebalance_frequency_strictness = self.commands[KEYWORD.REBALANCE_FREQUENCY_STRICTNESS]
+            except KeyError:
+                self._rebalance_frequency_strictness = 'soft'
+        return self._rebalance_frequency_strictness
+
+    @rebalance_frequency_strictness.setter
+    def rebalance_frequency_strictness(self, value):
+        self._rebalance_frequency_strictness = value
+
+
     # TODO: resolve how shorting is implemented. Is a negative long position a short? It should be.
     @property
     def can_short(self) -> bool:
         try:
-            return self._shorting
+            return self._can_short
         except AttributeError:
-            self._shorting = self.command_details[KEYWORD.CAN_SHORT]
-            return self._shorting
+            self._can_short = self.commands[KEYWORD.CAN_SHORT]
+            return self._can_short
 
     @can_short.setter
     def can_short(self, value):
         if not isinstance(value, bool):
             raise TypeError(f'value "{value}" is not a boolean.')
-        self._shorting = value
+        self._can_short = value
 
     # TODO: see prior todo
     @property
@@ -336,7 +336,7 @@ class PyPort:
         try:
             return self._short_limit
         except AttributeError:
-            self._short_limit = self.command_details[KEYWORD.SHORT_LIMIT]
+            self._short_limit = self.commands[KEYWORD.SHORT_LIMIT]
             return self._short_limit
 
     @short_limit.setter
@@ -348,7 +348,7 @@ class PyPort:
         try:
             return self._long_floor
         except AttributeError:
-            self._long_floor = self.command_details[KEYWORD.LONG_FLOOR]
+            self._long_floor = self.commands[KEYWORD.LONG_FLOOR]
             return self._long_floor
 
     @long_floor.setter
@@ -360,7 +360,7 @@ class PyPort:
         try:
             return self._long_ceiling
         except AttributeError:
-            self._long_ceiling = self.command_details[KEYWORD.LONG_CEILING]
+            self._long_ceiling = self.commands[KEYWORD.LONG_CEILING]
             return self._long_ceiling
 
     @long_ceiling.setter
@@ -405,7 +405,7 @@ class PyPort:
         try:
             return self._lookback_context
         except AttributeError:
-            self._lookback_context = {self.lookback_length_quantifier: self.lookback_length}
+            self._lookback_context = {self.lookback_quantifier: self.lookback_length}
             return self._lookback_context
 
 
