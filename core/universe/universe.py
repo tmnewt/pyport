@@ -1,5 +1,7 @@
+from pathlib import Path
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
+
 
 import numpy
 from numpy import ndarray
@@ -8,7 +10,7 @@ from scipy.optimize import OptimizeResult
 import matplotlib.pyplot as plt
 
 
-from ..dataloader import load_pyport, load_instructions
+from ..dataloader import _load_data, _load_instructions
 from ..actions import (
     _calc_log_returns,
     _slice_ts_df,
@@ -29,11 +31,14 @@ from .portfolio import Portfolio
 from .namings import KEYWORD
 
 
+# TODO: fix discrepency between declared assets and universe assets.
 # TODO: add doc strings
 class PyPort:
-    def __init__(self, name:str):
+    def __init__(self, name:str, alt_pyport_location:Path=None):
         self._name = name
-        self._instructions, self._ts_df = load_pyport(self.name) #TODO get ride of preloading dataframe to make as lazy as possible
+        self._instructions = self.load_pyport_instructions(self.name, alt_pyport_location)
+
+        self._ts_df:                    DataFrame
         self._universe:                 dict
         self._commands:                 dict
         self._description:              str
@@ -72,8 +77,6 @@ class PyPort:
         self._interval_returns:         ndarray
         self._cumulative_returns:       ndarray
 
-        #TODO: fix discrepency between declared assets and actual.
-        self._apply_drophow()
 
 
     # TODO: add meaningful repr and str support. Perhaps use pandas to get pleasent dataframes
@@ -85,8 +88,17 @@ class PyPort:
     #        print(portfolio)
 
 
+    @staticmethod
+    def load_pyport_instructions(name, alt_pyport_location:Path=None):
+        return _load_instructions(name, alt_pyport_location)
+
+
+    @staticmethod
+    def load_data(dataset_name:str, instructions:dict, alt_pyport_location:Path=None, fetch_missing_data:bool=True, save_dataframe:bool=True):
+        return _load_data(dataset_name, instructions, alt_pyport_location, fetch_missing_data, save_dataframe)
+
     def _apply_drophow(self):
-        self.ts_df.dropna(axis='columns', how=self.dropna_how, inplace=True)
+        self._ts_df.dropna(axis='columns', how=self.dropna_how, inplace=True)
 
 
     # TODO: implement method
@@ -113,12 +125,17 @@ class PyPort:
         try:
             return self._instructions
         except AttributeError:
-            self._instructions = load_instructions(self.name)
+            self._instructions = _load_instructions(self.name)
             return self._instructions
 
     @property
     def ts_df(self) -> DataFrame:
-        return self._ts_df
+        try: 
+            return self._ts_df
+        except AttributeError:
+            self._ts_df = _load_data(self.dataset_name, self.instructions)
+            self._apply_drophow()
+            return self._ts_df
 
     @property
     def universe(self):

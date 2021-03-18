@@ -7,7 +7,6 @@ import pandas
 import pandas_datareader as pdr
 from pandas import DataFrame
 
-from .settings import NAMING_DISCREPENCY
 from .storage_setup import DATA_PATH, PYPORTS_PATH
 from .universe.namings import KEYWORD
 
@@ -128,80 +127,64 @@ def _read_data(path:Path) -> DataFrame:
     return data
 
 
-def load_instructions(name):
-    universe_location = PYPORTS_PATH/name
-    universe_location = universe_location.with_suffix('.json')
-    
-    if not universe_location.exists():
-        # TODO: Add option to launch instruction creator.
-        raise_error_with_info(FileNotFoundError, universe_location,
-            f'Could not resolve file name of universe given {name}')
-    universe_instructions = _load_instruction(universe_location)
-    return universe_instructions
+def _load_instructions(path, alt_pyport_location:Path=None):
+    alt_pyport_path_found = False 
+    path_name=Path(path)
+    if path_name.suffix == '.json':
+        pass
+    else:
+        path_name = path_name.with_suffix('.json')
 
-#def load_data(related_dataset, fetch_missing_data:bool=True, save_dataframe:bool=True):
-#    dataset_location = DATA_PATH/related_dataset
-#    if not dataset_location.exists():
-#        if dataset_location.suffix == "":
-#            # instructions do not state how data is setup. Provides only a
-#            # name. Check to see if any existing data files match universe name.
-#            raise NotImplementedError('Logic for completing load operation under these conditions does not exist yet.')
-#
-#        elif fetch_missing_data:
-#            print('Downloading missing data. This may take a moment...')
-#            data = fetch_data(**_get_fetch_context(universe_instructions))
-#            if save_dataframe:
-#                if dataset_location.suffix == "":
-#                    print('No file type specified in instructions. Defaulting to ".pkl"')
-#                    dataset_location = dataset_location.with_suffix('.pkl')
-#                print(f'preparing to save data at {dataset_location}')
-#                _save_data(data, dataset_location)
-#        else:
-#            raise_error_with_info(FileNotFoundError, dataset_location,
-#                f'Declared related_dataset: "{related_dataset}" cannot be found and you have opted to not fetch any missing data.')
-#    else:
-#        universe_ts_data = _read_data(dataset_location)
-#
-#    return universe_ts_data
-#
+    if alt_pyport_location:
+        if not isinstance(alt_pyport_location, Path):
+            alt_pyport_location = Path(alt_pyport_location)
+        if not alt_pyport_location.exists():
+            raise_error_with_info(FileNotFoundError, alt_pyport_location)
+        pyport_location = alt_pyport_location/path_name
+        alt_pyport_path_found = True
+    else:
+        pyport_location = PYPORTS_PATH/path_name
 
-def load_pyport(name:str, fetch_missing_data:bool=True, save_dataframe:bool=True):
-    # TODO: add universe_update information in returns.
-    pyport_location = PYPORTS_PATH/name
-    pyport_location = pyport_location.with_suffix('.json')
-    
     if not pyport_location.exists():
-        # TODO: Add option to launch instruction creator.
-        raise_error_with_info(FileNotFoundError, pyport_location,
-            f'Could not resolve file name of universe given {name}')
-
+        if alt_pyport_path_found:
+            text = f'Could not find pyport file "{path_name}" at alternative location {alt_pyport_location}'
+        else:
+            text = f'Could not find pyport file "{path_name}"'
+        raise_error_with_info(FileNotFoundError, pyport_location, text)
     instructions = _load_instruction(pyport_location)
-    dataset_name = instructions[KEYWORD.UNIVERSE][KEYWORD.DATASET_NAME]
-    dataset_location = DATA_PATH/dataset_name
+    return instructions
 
 
-    if (pyport_location.stem != dataset_location.stem) and NAMING_DISCREPENCY:
-        print(f'The name of the universe inferred by this instruction file\' name differs from the simple name of the dataset. The implied universe name is "{pyport_location.stem}"  while the related dataset name was declared as "{dataset_location.stem}. Typically the universe and dataset share the same name. However, this is not strictly enforced. If these instructions were intentional this warning can be ignored. To surpress this message, change settings variable "NAMING_DISCREPENCY" to False.')
+
+def _load_data(dataset_name:str, instructions:dict, alt_pyport_location:Path=None, fetch_missing_data:bool=True, save_dataframe:bool=True):
+    if alt_pyport_location:
+        if not isinstance(alt_pyport_location, Path):
+            alt_pyport_location = Path(alt_pyport_location)
+        if not alt_pyport_location.exists():
+            raise_error_with_info(FileNotFoundError, alt_pyport_location)
+        dataset_location = alt_pyport_location/dataset_name
+    else:
+        dataset_location = DATA_PATH/dataset_name
 
     if not dataset_location.exists():
         if dataset_location.suffix == "":
             # instructions do not state how data is setup. Provides only a
             # name. Check to see if any existing data files match universe name.
-            raise NotImplementedError('Logic for completing load operation under these conditions does not exist yet.')
+            raise NotImplementedError('Logic for completing load operation without specifying the file type does not exist yet.')
 
         if fetch_missing_data:
             print('Downloading missing data. This may take a moment...')
-            data = fetch_data(**_get_fetch_context(instructions))
+            ts_df = fetch_data(**_get_fetch_context(instructions))
             if save_dataframe:
                 if dataset_location.suffix == "":
                     print('No file type specified in instructions. Defaulting to ".pkl"')
                     dataset_location = dataset_location.with_suffix('.pkl')
                 print(f'preparing to save data at {dataset_location}')
-                _save_data(data, dataset_location)
+                _save_data(ts_df, dataset_location)
         else:
             raise_error_with_info(FileNotFoundError, dataset_location,
                 f'Declared dataset_name "{dataset_name}" cannot be found and you have opted to not fetch any missing data.')
     else:
-        ts_data = _read_data(dataset_location)
+        ts_df = _read_data(dataset_location)
 
-    return [instructions, ts_data]
+    return ts_df
