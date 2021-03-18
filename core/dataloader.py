@@ -138,6 +138,7 @@ def _load_instructions(path, alt_pyport_location:Path=None):
     if alt_pyport_location:
         if not isinstance(alt_pyport_location, Path):
             alt_pyport_location = Path(alt_pyport_location)
+        alt_pyport_location = alt_pyport_location/'pyports'
         if not alt_pyport_location.exists():
             raise_error_with_info(FileNotFoundError, alt_pyport_location)
         pyport_location = alt_pyport_location/path_name
@@ -160,6 +161,7 @@ def _load_data(dataset_name:str, instructions:dict, alt_pyport_location:Path=Non
     if alt_pyport_location:
         if not isinstance(alt_pyport_location, Path):
             alt_pyport_location = Path(alt_pyport_location)
+        alt_pyport_location = alt_pyport_location/'data'
         if not alt_pyport_location.exists():
             raise_error_with_info(FileNotFoundError, alt_pyport_location)
         dataset_location = alt_pyport_location/dataset_name
