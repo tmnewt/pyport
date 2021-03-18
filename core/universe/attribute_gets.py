@@ -1,5 +1,7 @@
 from pandas import Timestamp
 
+# TODO what exactly was the crucial intent of this code?...
+
 def _get_universe_attributes(instructions:dict) -> list:
     universe_section = instructions['universe']
 

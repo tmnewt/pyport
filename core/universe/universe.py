@@ -41,31 +41,27 @@ class PyPort:
         self._description         = self._instructions['description']
 
 
-        # Instance Attributes (known as the universe attributes) which may be altered, but to a lesser extent of command attributes
-        # Universe's start and ends dates are typical examples of attributes which may change.
-        (self._related_dataset,
-        self._universe_start,
-        self._universe_end,
-        self._data_interval,
-        self._dropna_how,
-        self._declared_assets) = self._get_initial_universe_attributes()
-        #TODO: fix discrepency between declared assets and actual.
 
-        self._apply_drophow()
+        # universe category attributes
+        self._universe_start:           Timestamp
+        self._universe_end:             Timestamp
+        self._data_interval:            str
+        self._dropna_how:               str
+        self._declared_assets:          list
 
-        # Instance attributes (known as the command attributes) which are often altered.
-        # These are the primary pieces which when changed produce new results
-        (self._strategy_start,
-        self._lookback_length,
-        self._lookback_time_quantifier,
-        self._rebalance,
-        self._rebalance_frequency,
-        self._shorting,
-        self._short_limit,
-        self._long_floor,
-        self._long_ceiling) = self._get_initial_command_attributes()
 
-        # universal attributes
+        self._strategy_start:           Timestamp
+        self._strategy_end:             Timestamp
+        self._lookback_length:          int
+        self._lookback_time_quantifier: str
+        self._rebalance:                bool
+        self._rebalance_frequency:      str
+        self._shorting:                 bool
+        self._short_limit:              float
+        self._long_floor:               float
+        self._long_ceiling:             float
+
+        # derrived attributes
         self._universe_assets:          list
         self._bounds:                   tuple
         self._constraints:              dict
@@ -77,6 +73,8 @@ class PyPort:
         self._interval_returns:         ndarray
         self._cumulative_returns:       ndarray
 
+        #TODO: fix discrepency between declared assets and actual.
+        self._apply_drophow()
 
 
     # TODO: add meaningful repr and str support. Perhaps use pandas to get pleasent dataframes
@@ -123,6 +121,10 @@ class PyPort:
     def name(self):
         return self._pyport_name
 
+    @name.setter
+    def name(self, value):
+        self._pyport_name = value
+
     @property
     def instructions(self):
         return self._instructions
@@ -144,8 +146,25 @@ class PyPort:
         return self._description
 
     @property
+    def related_dataset(self):
+        try:
+            return self._related_dataset
+        except AttributeError:
+            self._related_dataset = self.universe_details['related_dataset']
+            return self._related_dataset
+
+    # TODO re-implement related_dataset.setter when safe
+    #@related_dataset.setter
+    #def related_dataset(self, value):
+    #    self._related_dataset = value
+
+    @property
     def universe_start(self) -> Timestamp:
-        return self._universe_start
+        try:
+            return self._universe_start
+        except AttributeError:          # TODO: create naming constants module
+            self._universe_start = Timestamp(self.universe_details['analysis_start_date'])
+            return self._universe_start
 
     @universe_start.setter
     def universe_start(self, value):
@@ -153,7 +172,11 @@ class PyPort:
 
     @property
     def universe_end(self) -> Timestamp:
-        return self._universe_end
+        try:
+            return self._universe_end
+        except AttributeError:
+            self._universe_end = Timestamp(self.universe_details['analysis_end_date'])
+            return self._universe_end
 
     @universe_end.setter
     def universe_end(self, value):
@@ -161,19 +184,33 @@ class PyPort:
 
     @property
     def data_interval(self) -> str:
-        return self._data_interval
+        try:
+            return self._data_interval
+        except AttributeError:
+            self._data_interval = self.universe_details['interval']
+            return self._data_interval
 
     @property
     def dropna_how(self) -> str:
-        return self._dropna_how
+        try:
+            return self._dropna_how
+        except AttributeError:
+            self._dropna_how = self.universe_details['dropna_how']
+            return self._dropna_how
+
 
     @property
     def declared_assets(self) -> list:
-        return self._declared_assets
+        try:
+            return self._declared_assets
+        except AttributeError:
+            self._declared_assets = self.universe_details['assets']
+            return self._declared_assets
 
-    @declared_assets.setter
-    def declared_assets(self, value):
-        self._declared_assets = value
+    # TODO re-implement declared_assets.setter when safe
+    #@declared_assets.setter
+    #def declared_assets(self, value):
+    #    self._declared_assets = value
 
     @property
     def universe_assets(self):
@@ -183,14 +220,17 @@ class PyPort:
             self._universe_assets = self._update_universe_assets()
             return self._universe_assets
 
-
     def _update_universe_assets(self):
         return self.ts_df.columns.values
 
 
     @property
     def strategy_start(self) -> Timestamp:
-        return self._strategy_start
+        try:
+            return self._strategy_start
+        except AttributeError:
+            self._strategy_start = Timestamp(self.command_details['strategy_start'])
+            return self._strategy_start
 
     @strategy_start.setter
     def strategy_start(self, value):
@@ -198,7 +238,14 @@ class PyPort:
 
     @property
     def strategy_end(self) -> Timestamp:
-        return self._universe_end
+        try:
+            return self._strategy_end
+        except AttributeError:
+            try:
+                self._strategy_end = self.command_details['strategy_end']
+            except AttributeError:
+                self._strategy_end = self.universe_end
+            return self._strategy_end
 
     @strategy_end.setter
     def strategy_end(self, value):
@@ -206,7 +253,11 @@ class PyPort:
 
     @property
     def lookback_length(self) -> int:
-        return self._lookback_length
+        try:
+            return self._lookback_length
+        except AttributeError:
+            self._lookback_length = int(self.command_details['lookback_length'])
+            return self._lookback_length
 
     @lookback_length.setter
     def lookback_length(self, value):
@@ -214,7 +265,11 @@ class PyPort:
 
     @property
     def lookback_length_quantifier(self) -> str:
-        return self._lookback_time_quantifier
+        try:
+            return self._lookback_time_quantifier
+        except AttributeError:
+            self._lookback_time_quantifier = self.command_details['lookback_time_quantifier']
+            return self._lookback_time_quantifier
 
     @lookback_length_quantifier.setter
     def lookback_length_quantifier(self, value):
@@ -222,7 +277,11 @@ class PyPort:
 
     @property
     def can_rebalance(self) -> bool:
-        return self._rebalance
+        try:
+            return self._rebalance
+        except AttributeError:
+            self._rebalance = self.command_details['rebalance']
+            return self._rebalance
 
     @can_rebalance.setter
     def can_rebalance(self, value):
@@ -232,26 +291,41 @@ class PyPort:
 
     @property
     def rebalance_frequency(self) -> str:
-        return self._rebalance_frequency
+        try:
+            return self._rebalance_frequency
+        except AttributeError:
+            self._rebalance_frequency = self.command_details['rebalance_frequency']
+            return self._rebalance_frequency
 
     @rebalance_frequency.setter
     def rebalance_frequency(self, value):
         self._rebalance_frequency = value
 
 
+
     # TODO: resolve how shorting is implemented. Is a negative long position a short? It should be.
     @property
     def can_short(self) -> bool:
-        return self._shorting
+        try:
+            return self._shorting
+        except AttributeError:
+            self._shorting = self.command_details['shorting']
+            return self._shorting
 
     @can_short.setter
     def can_short(self, value):
+        if not isinstance(value, bool):
+            raise TypeError(f'value "{value}" is not a boolean.')
         self._shorting = value
 
     # TODO: see prior todo
     @property
     def short_limit(self) -> float:
-        return self._short_limit
+        try:
+            return self._short_limit
+        except AttributeError:
+            self._short_limit = self.command_details['short_limit']
+            return self._short_limit
 
     @short_limit.setter
     def short_limit(self, value):
@@ -259,7 +333,11 @@ class PyPort:
 
     @property
     def long_floor(self) -> float:
-        return self._long_floor
+        try:
+            return self._long_floor
+        except AttributeError:
+            self._long_floor = self.command_details['long_floor']
+            return self._long_floor
 
     @long_floor.setter
     def long_floor(self, value):
@@ -267,8 +345,12 @@ class PyPort:
 
     @property
     def long_ceiling(self) -> float:
-        return self._long_ceiling
-    
+        try:
+            return self._long_ceiling
+        except AttributeError:
+            self._long_ceiling = self.command_details['long_ceiling']
+            return self._long_ceiling
+
     @long_ceiling.setter
     def long_ceiling(self, value):
         self._long_ceiling = value
@@ -451,7 +533,7 @@ class PyPort:
             
             return self._cumulative_returns
 
-    
+
 
     def show_cumulative_returns(self):
         plt.figure('cumulative_figure')
