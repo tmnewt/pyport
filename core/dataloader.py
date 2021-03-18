@@ -129,16 +129,24 @@ def _read_data(path:Path) -> DataFrame:
     return data
 
 
+def load_instructions(name):
+    universe_location = UNIVERSES_PATH/name
+    universe_location = universe_location.with_suffix('.json')
+    
+    if not universe_location.exists():
+        # TODO: Add option to launch instruction creator.
+        raise_error_with_info(FileNotFoundError, universe_location,
+            f'Could not resolve file name of universe given {name}')
+    universe_instructions = _load_instruction(universe_location)
+    return universe_instructions
 
 def load_universe(name:str, fetch_missing_data:bool=True, save_dataframe:bool=True):
     # TODO: add universe_update information in returns.
     universe_location = UNIVERSES_PATH/name
     universe_location = universe_location.with_suffix('.json')
-    fresh_instructions = False
     
     if not universe_location.exists():
         # TODO: Add option to launch instruction creator.
-        # fresh_instructions = True
         raise_error_with_info(FileNotFoundError, universe_location,
             f'Could not resolve file name of universe given {name}')
 

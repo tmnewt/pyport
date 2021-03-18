@@ -33,23 +33,21 @@ from .portfolio import Portfolio
 class PyPort:
     def __init__(self, pyport_name:str):
         self._pyport_name = pyport_name
-
-        # preserves the initial information. This becomes useful later
-        self._instructions, self._ts_df = self._load_initial_universe(self._pyport_name)
+        self._instructions, self._ts_df = self._load_initial_universe(self._pyport_name) #TODO get ride of preloading dataframe to make as lazy as possible
         self._universe_details = self._instructions['universe']
         self._command_details  = self._instructions['commands']
         self._description         = self._instructions['description']
 
 
-
         # universe category attributes
+        self._related_dataset:          str
         self._universe_start:           Timestamp
         self._universe_end:             Timestamp
         self._data_interval:            str
         self._dropna_how:               str
         self._declared_assets:          list
 
-
+        # command category attributes
         self._strategy_start:           Timestamp
         self._strategy_end:             Timestamp
         self._lookback_length:          int
