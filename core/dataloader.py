@@ -49,11 +49,8 @@ def _get_fetch_context(instructions:dict) -> dict:
     fetch_context['analysis_end_date'] = instructions['universe']['analysis_end_date']
     fetch_context['interval'] = instructions['universe']['interval']
     fetch_context['dropna_how'] = instructions['universe']['dropna_how']
-    
     return fetch_context
 
-def _get_universe_name(instructions:dict) -> str:
-    pass
 
 def _cast_path_object(pathlike) -> Path:
     return Path(pathlike)
