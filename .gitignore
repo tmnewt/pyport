@@ -111,3 +111,6 @@ venv.bak/
 
 # local portfolios
 your_pyport/
+
+# oldstuff
+oldstuff/
