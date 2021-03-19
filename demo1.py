@@ -1,4 +1,4 @@
-from core.universe.universe import PyPort
+from core.universe.pyportframe import PyPort
 from core.settings import EXAMPLES_DIR
 
 p = PyPort('silly', EXAMPLES_DIR)
