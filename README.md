@@ -112,6 +112,6 @@ Coming (sometime) soon.
 
 
 # Help me
-There is a ton of work which still needs to be completed. There are so many core features which are missing. This is my passion project but even I have limited time. I'd like to soon have release the first stable version in the near future. If you'd like to help out, (or want me to walk you through what exactly I'm attempting here) please leave a post over on the [discussion](https://github.com/tmnewt/pyport/discussions) tab or email me directory at timothy.newton.cma13@gmail.com and I'll get back to you ASAP.
+There is a ton of work which still needs to be completed. There are so many core features which are missing. This is my passion project but even I have limited time. I'd like to soon have release the first stable version in the near future. If you'd like to help out, (or want me to walk you through what exactly I'm attempting here) please leave a post over on the [discussion](https://github.com/tmnewt/pyport/discussions) tab or email me directly at timothy.newton.cma13@gmail.com and I'll get back to you ASAP.
 
-Also, I am not a quant myself but I have considered becoming one. I'm unsure if I have the skills necessary though. I do have a Masters in Finance. I currently live near downtown Chicago. If you would like to assist in my journey (or just want to give me some tips) you can reach me
+Also, I am not a quant myself but I have considered becoming one. I'm unsure if I have the skills necessary though. I do have a Masters in Finance. I currently live near downtown Chicago. If you would like to assist in my journey (or just want to give me some tips) you can reach me at my email above.
