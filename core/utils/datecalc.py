@@ -24,10 +24,11 @@ def lookback(end:Timestamp, **kwargs):
 
 
 def timeframe_end(start:Timestamp, rebalance_frequency, strictness:str='soft'):
-    if isinstance(rebalance_frequency, float):
+    try:
         rebalance_frequency = int(rebalance_frequency)
-
-    if isinstance(rebalance_frequency, int):
+    except ValueError:
+        pass
+    else:
         return n_days_from_date(start, rebalance_frequency)
 
     if isinstance(rebalance_frequency, str):
